@@ -61,6 +61,7 @@ All three default sensibly: count 500, age and budget off.
 
 ## Files
 
-Names are `st-<YYYYMMDD>-<HHMMSS>-<monitor>.png` (or `.jpg`), sortable by
-name. Timestamps are local time. Failed captures never overwrite; the last
+Names are `st-<YYYYMMDD>-<HHMMSS>-<monitor>.png` (or `.jpg`), or
+`st-<YYYYMMDD>-<HHMMSS>.png` when every screen goes into one image. Sortable
+by name. Timestamps are local time. Failed captures never overwrite; the last
 error is shown in the panel and through `omarchy-shell fazuh.screenlogs status`.

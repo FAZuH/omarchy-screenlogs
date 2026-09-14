@@ -9,7 +9,7 @@
 <hr>
 
 <div align="center">
-● <a href="#installation">Installation</a> ﻿ ● <a href="#usage">Usage</a> ﻿ ● <a href="#configuration">Configuration</a> ﻿ ● <a href="#docs">Docs</a> ﻿ ● <a href="#license">License</a>
+● <a href="#installation">Installation</a> ﻿ ● <a href="#preview">Preview</a> ﻿ ● <a href="#usage">Usage</a> ﻿ ● <a href="#configuration">Configuration</a> ﻿ ● <a href="#docs">Docs</a> ﻿ ● <a href="#license">License</a>
 </div>
 
 ## Installation
@@ -17,6 +17,27 @@
 ```bash
 omarchy plugin add https://github.com/FAZuH/omarchy-screenlogs.git --enable
 ```
+
+Remove it again with:
+
+```bash
+omarchy plugin remove fazuh.screenlogs
+```
+
+Screenshots and `~/.config/omarchy/screenlogs/config.json` are left in
+place; delete them if you want nothing behind.
+
+Screenlogs needs `grim` and `xdg-open`, both already installed by Omarchy.
+
+## Preview
+
+The panel (left click the camera icon):
+
+![Preview](preview.png)
+
+The settings window (the gear in the panel):
+
+![Settings](preview/settings.png)
 
 ## Usage
 
@@ -47,7 +68,7 @@ omarchy-shell fazuh.screenlogs enable    # resume (captures immediately)
 Open the settings window (gear) to edit everything live. Settings are stored
 in `~/.config/omarchy/screenlogs/config.json`.
 
-See [Configuration reference](docs/configuration) for the full key reference.
+See [Configuration reference](docs/configuration.md) for the full key reference.
 
 ## Docs
 

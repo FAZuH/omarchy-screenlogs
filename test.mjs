@@ -103,6 +103,8 @@ check("single quote is escaped", C.shQuote("it's"), "'it'\\''s'")
 check("leading quote is escaped", C.shQuote("'/tmp x"), "''\\''/tmp x'")
 check("monitor name is filename-safe", C.safeMonitor("DP 1/../x"), "DP-1-..-x")
 check("stamp is sortable", C.stamp(at), "20260915-142530")
+check("stamp pads single-digit fields",
+  C.stamp(new Date(2026, 0, 5, 1, 2, 3).getTime()), "20260105-010203")
 
 // ---- capture script: captures ----
 const cfg = (over) => C.normalize(Object.assign({}, C.DEFAULTS, over))
@@ -116,6 +118,9 @@ check("png files use the png extension",
 check("jpeg sets the quality flag",
   C.captureScript(cfg({ dir: "~/Pix", format: "jpeg" }), at, ["DP-1"], "/home/u")
     .includes(" -t jpeg -q 85"), true)
+check("custom jpeg quality reaches grim",
+  C.captureScript(cfg({ dir: "~/Pix", format: "jpeg", jpegQuality: 70 }), at, ["DP-1"], "/home/u")
+    .includes(" -t jpeg -q 70"), true)
 check("jpeg files use the jpg extension",
   C.captureScript(cfg({ dir: "~/Pix", format: "jpeg" }), at, ["DP-1"], "/home/u")
     .includes("st-20260915-142530-DP-1.jpg"), true)

@@ -344,7 +344,6 @@ PanelWindow {
             }
           }
 
-
           PanelSeparator { Layout.fillWidth: true; foreground: root.text }
 
           PanelSectionHeader {
