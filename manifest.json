@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "fazuh.screenlogs",
   "name": "Screenlogs",
-  "version": "1.1.0",
+  "version": "0.1.1",
   "author": "FAZuH",
   "license": "MIT",
   "description": "Periodic screen capture: a fullscreen screenshot every N seconds, per monitor, with lock/idle/active-hours pauses and count, age and disk-budget retention.",
@@ -133,7 +133,7 @@
       {
         "key": "maxDiskMb",
         "type": "integer",
-        "label": "directory budget (MB)",
+        "label": "Directory budget (MB)",
         "description": "Oldest files are deleted until the directory fits; 0 is unlimited.",
         "min": 0,
         "max": 1048576,
