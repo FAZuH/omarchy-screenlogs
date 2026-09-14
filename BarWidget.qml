@@ -54,6 +54,7 @@ BarWidget {
     function hide(): void { root.close() }
     function toggle(): void { root.toggle() }
     function capture(): void { if (root.ready) root.service.captureNow() }
+    function settings(): void { if (root.ready) root.service.showSettings() }
     function enable(): void { if (root.ready) root.service.setEnabled(true) }
     function disable(): void { if (root.ready) root.service.setEnabled(false) }
     function status(): string {

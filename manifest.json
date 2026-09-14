@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "fazuh.screenlogs",
   "name": "Screenlogs",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "FAZuH",
   "license": "MIT",
-  "description": "Periodic screen capture: a fullscreen screenshot every N seconds, per monitor, with recent-file retention.",
+  "description": "Periodic screen capture: a fullscreen screenshot every N seconds, per monitor, with lock/idle/active-hours pauses and count, age and disk-budget retention.",
   "kinds": [
     "service",
     "bar-widget"
@@ -16,16 +16,24 @@
   },
   "barWidget": {
     "displayName": "Screenlogs",
-    "description": "Periodic screen capture with monitor selection and retention",
+    "description": "Periodic screen capture with lock/idle pauses and count, age and disk retention",
     "category": "Capture",
     "allowMultiple": false,
     "defaultSection": "right",
     "defaults": {
       "enabled": true,
       "periodSec": 60,
-      "keep": 500,
       "dir": "~/Pictures/screenlogs",
-      "monitors": []
+      "monitors": [],
+      "pauseWhenLocked": true,
+      "activeFrom": "",
+      "activeTo": "",
+      "idleMinutes": 0,
+      "format": "png",
+      "jpegQuality": 85,
+      "keep": 500,
+      "keepHours": 0,
+      "maxDiskMb": 0
     },
     "schema": [
       {
@@ -45,15 +53,6 @@
         "defaultValue": 60
       },
       {
-        "key": "keep",
-        "type": "integer",
-        "label": "Recent screenshots to keep",
-        "description": "Newest N files kept in the folder; 0 keeps everything.",
-        "min": 0,
-        "max": 100000,
-        "defaultValue": 500
-      },
-      {
         "key": "dir",
         "type": "string",
         "label": "Save folder",
@@ -66,6 +65,79 @@
         "label": "Monitors",
         "description": "Monitor names to capture; empty captures every screen.",
         "defaultValue": []
+      },
+      {
+        "key": "pauseWhenLocked",
+        "type": "boolean",
+        "label": "Pause while locked",
+        "description": "Skip captures while the session is locked.",
+        "defaultValue": true
+      },
+      {
+        "key": "activeFrom",
+        "type": "string",
+        "label": "Active from (HH:MM)",
+        "description": "Empty means always active.",
+        "defaultValue": ""
+      },
+      {
+        "key": "activeTo",
+        "type": "string",
+        "label": "Active to (HH:MM)",
+        "description": "A start later than the end wraps past midnight.",
+        "defaultValue": ""
+      },
+      {
+        "key": "idleMinutes",
+        "type": "integer",
+        "label": "Pause after idle (minutes)",
+        "description": "0 never pauses for idleness.",
+        "min": 0,
+        "max": 1440,
+        "defaultValue": 0
+      },
+      {
+        "key": "format",
+        "type": "string",
+        "label": "Image format",
+        "description": "png or jpeg.",
+        "defaultValue": "png"
+      },
+      {
+        "key": "jpegQuality",
+        "type": "integer",
+        "label": "JPEG quality",
+        "description": "Only used for jpeg.",
+        "min": 1,
+        "max": 100,
+        "defaultValue": 85
+      },
+      {
+        "key": "keep",
+        "type": "integer",
+        "label": "Recent screenshots to keep",
+        "description": "Newest N files kept in the folder; 0 keeps everything.",
+        "min": 0,
+        "max": 100000,
+        "defaultValue": 500
+      },
+      {
+        "key": "keepHours",
+        "type": "integer",
+        "label": "Keep screenshots newer than (hours)",
+        "description": "0 turns the age limit off.",
+        "min": 0,
+        "max": 87600,
+        "defaultValue": 0
+      },
+      {
+        "key": "maxDiskMb",
+        "type": "integer",
+        "label": "Folder budget (MB)",
+        "description": "Oldest files are deleted until the folder fits; 0 is unlimited.",
+        "min": 0,
+        "max": 1048576,
+        "defaultValue": 0
       }
     ]
   }

@@ -6,30 +6,37 @@ import "Capture.js" as Capture
 Item {
   id: root
 
-  // Config lives in this plugin's own file (like Auto Wallpaper and Snappy do)
-  // rather than inline in shell.json: it survives the widget being removed
-  // from the bar, and the panel edits it through one writer — this service.
+  // Config lives in this plugin's own file rather than inline in shell.json:
+  // it survives the widget being removed from the bar, and every edit routes
+  // through this service — the single writer.
   readonly property string home: Quickshell.env("HOME")
   readonly property string configDir: home + "/.config/omarchy/screenlogs"
   readonly property string configPath: configDir + "/config.json"
 
-  // Mirrors Capture.DEFAULTS until the config file loads. `enabled` and
-  // `periodSec` are literal so a stale cached Capture library or a config
-  // write racing startup can't leave captures un- or over-scheduled.
   property bool loaded: false
-  property var config: ({
-    enabled: true,
-    periodSec: 60,
-    keep: 500,
-    dir: Capture.DEFAULTS.dir,
-    monitors: []
-  })
+  property var config: Capture.normalize({})
 
   property bool busy: false
+  property bool locked: false
   property string lastError: ""
   property string lastShot: ""
   property double lastShotAt: 0
   property int fileCount: -1
+  property double nowMs: 0
+
+  readonly property bool idlePaused: root.config.idleMinutes > 0 && idleMonitor.isIdle
+
+  IdleMonitor {
+    id: idleMonitor
+    enabled: root.loaded && root.config.idleMinutes > 0
+    timeout: root.config.idleMinutes * 60
+    respectInhibitors: true
+  }
+
+  SettingsWindow {
+    id: settingsWindow
+    service: root
+  }
 
   function screenNames() {
     var out = []
@@ -47,8 +54,13 @@ Item {
   }
 
   function statusText() {
-    var s = root.config.enabled
-      ? "Every " + root.config.periodSec + "s" : "Paused"
+    if (!root.loaded) return "Starting…"
+    if (!root.config.enabled) return "Paused"
+    if (root.locked) return "Paused — screen locked"
+    if (root.idlePaused) return "Paused — idle"
+    if (!Capture.isWithinActiveHours(root.config.activeFrom, root.config.activeTo, new Date(root.nowMs)))
+      return "Paused — outside " + root.config.activeFrom + "–" + root.config.activeTo
+    var s = "Every " + root.config.periodSec + "s"
     if (root.lastShotAt > 0)
       s += " · last " + Qt.formatDateTime(new Date(root.lastShotAt), "HH:mm:ss")
     if (root.fileCount >= 0)
@@ -83,18 +95,6 @@ Item {
     if (value === true && !root.busy) captureNow()
   }
 
-  function setPeriod(seconds) {
-    saveConfig({ periodSec: seconds })
-  }
-
-  function setKeep(count) {
-    saveConfig({ keep: count })
-  }
-
-  function setDir(text) {
-    saveConfig({ dir: text })
-  }
-
   function toggleMonitor(name) {
     saveConfig({
       monitors: Capture.toggleMonitor(
@@ -107,33 +107,44 @@ Item {
     openProc.running = true
   }
 
+  function showSettings() {
+    settingsWindow.opened = true
+  }
+
   function captureNow() {
     if (root.busy) return
     root.busy = true
     captureProc.command = ["bash", "-c", Capture.captureScript(
-      root.config.dir, root.config.keep, Date.now(), root.config.monitors, root.home)]
+      root.config, Date.now(), root.config.monitors, root.home)]
     captureProc.running = true
   }
 
-  // The one-second tick mirrors Auto Wallpaper's scheduler: an in-memory due
-  // check that spawns nothing until a capture is actually due, and picks up
-  // period or monitor changes (and suspend/wake) without timer bookkeeping.
+  // One-second tick instead of a rescheduled timer: nothing spawns until a
+  // capture is actually due, and period, monitor or pause changes (plus
+  // suspend/wake) are picked up on the next pass without timer bookkeeping.
   function reconcile() {
+    root.nowMs = Date.now()
     if (!root.loaded || root.busy || !root.config.enabled) return
+    if (root.idlePaused) return
+    if (!Capture.isWithinActiveHours(root.config.activeFrom, root.config.activeTo, new Date(root.nowMs))) return
     var due = root.lastShotAt <= 0
-      || (Date.now() - root.lastShotAt) >= root.config.periodSec * 1000
+      || (root.nowMs - root.lastShotAt) >= root.config.periodSec * 1000
     if (due) captureNow()
   }
 
   function applyCaptureOutput(text) {
+    var sawLocked = false
     var lines = String(text || "").split("\n")
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i]
-      if (line.indexOf("LAST=") === 0) root.lastShot = line.slice(5)
+      if (line === "LOCKED=1") sawLocked = true
+      else if (line.indexOf("LAST=") === 0) root.lastShot = line.slice(5)
       else if (line.indexOf("ERR=") === 0) root.lastError = line.slice(4).trim()
       else if (line.indexOf("COUNT=") === 0)
         root.fileCount = parseInt(line.slice(6), 10) || 0
     }
+    root.locked = sawLocked
+    if (!sawLocked) root.lastShotAt = Date.now()
   }
 
   Process {
@@ -157,14 +168,13 @@ Item {
       waitForEnd: true
       onStreamFinished: {
         var detail = String(text || "").trim()
-        // Capture failures are already reported through the ERR line; stderr
-        // only carries script-level mistakes (bad cd, xargs missing).
+        // Capture failures already arrive through the ERR line; stderr only
+        // carries script-level mistakes (bad cd, xargs missing).
         if (detail && !root.lastError) root.lastError = detail.slice(0, 300)
       }
     }
     onExited: function(exitCode) {
       root.busy = false
-      root.lastShotAt = Date.now()
       if (exitCode !== 0 && !root.lastError)
         root.lastError = "capture script exited " + exitCode
     }
@@ -177,7 +187,6 @@ Item {
     printErrors: false
     onFileChanged: reload()
     onLoaded: root.applyConfig(text())
-    // Fresh install: seed the file so the folder documents itself.
     onLoadFailed: {
       applyConfig("")
       saveConfig({})
