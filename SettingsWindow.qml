@@ -155,7 +155,6 @@ PanelWindow {
           Toggle {
             Layout.fillWidth: true
             label: "Pause while the screen is locked"
-            description: "No captures while the session is locked; the next one follows shortly after unlock."
             checked: root.service ? root.service.config.pauseWhenLocked : Capture.DEFAULTS.pauseWhenLocked
             foreground: root.text
             accent: Color.accent
@@ -220,7 +219,7 @@ PanelWindow {
 
           Text {
             Layout.fillWidth: true
-            text: "Captures happen only inside the active window. Press Enter to save. Blank or equal bounds mean always active; a start later than the end wraps past midnight (22:00–06:00 covers the night)."
+            text: "Blank or equal bounds mean always active. Start later than the end wraps past midnight."
             textFormat: Text.PlainText
             color: root.dim
             font.family: root.fontFamily
@@ -281,56 +280,9 @@ PanelWindow {
             }
           }
 
-          Text {
-            Layout.fillWidth: true
-            text: root.service && root.service.config.monitors.length === 0
-              ? "Every screen is captured, and a monitor plugged in later is picked up automatically."
-              : "Only the checked screens are captured, one file each per period."
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
-          }
-
-          TextField {
-            id: dirField
-            Layout.fillWidth: true
-            placeholderText: Capture.DEFAULTS.dir
-            text: root.dirDraft
-            foreground: root.text
-            accent: Color.accent
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.body
-            enabled: root.service !== null
-            onAccepted: {
-              if (root.service) root.service.saveConfig({ dir: text })
-              root.dirDraft = text
-              focus = false
-            }
-            Keys.onPressed: function(event) {
-              if (event.key === Qt.Key_Escape) {
-                text = root.dirDraft
-                focus = false
-                event.accepted = true
-              }
-            }
-          }
-
-          Text {
-            Layout.fillWidth: true
-            text: "Save folder. Press Enter to apply. `~` expands to the home directory; the folder is created on the next capture."
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
-          }
-
           Toggle {
             Layout.fillWidth: true
             label: "Save as JPEG"
-            description: "Smaller files at the cost of compression artifacts. PNG stays lossless."
             checked: root.service ? root.service.config.format === "jpeg" : false
             foreground: root.text
             accent: Color.accent
@@ -358,6 +310,40 @@ PanelWindow {
               if (root.service) root.service.saveConfig({ jpegQuality: value })
             }
           }
+
+          Text {
+            Layout.fillWidth: true
+            text: "Save folder"
+            textFormat: Text.PlainText
+            color: root.dim
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.caption
+            wrapMode: Text.WordWrap
+          }
+          TextField {
+            id: dirField
+            Layout.fillWidth: true
+            placeholderText: Capture.DEFAULTS.dir
+            text: root.dirDraft
+            foreground: root.text
+            accent: Color.accent
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.body
+            enabled: root.service !== null
+            onAccepted: {
+              if (root.service) root.service.saveConfig({ dir: text })
+              root.dirDraft = text
+              focus = false
+            }
+            Keys.onPressed: function(event) {
+              if (event.key === Qt.Key_Escape) {
+                text = root.dirDraft
+                focus = false
+                event.accepted = true
+              }
+            }
+          }
+
 
           PanelSeparator { Layout.fillWidth: true; foreground: root.text }
 
@@ -418,7 +404,7 @@ PanelWindow {
 
           Text {
             Layout.fillWidth: true
-            text: "0 turns a limit off. After every capture round the folder is pruned by age, then newest-first by count, then oldest-first until it fits the budget."
+            text: "0 turns a limit off."
             textFormat: Text.PlainText
             color: root.dim
             font.family: root.fontFamily

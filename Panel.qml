@@ -88,7 +88,7 @@ Panel {
           Layout.fillWidth: true
           label: "Capture screenshots"
           description: root.service && root.service.config.enabled
-            ? "A screenshot every " + root.service.config.periodSec + " seconds."
+            ? "Screenshot every " + root.service.config.periodSec + " seconds."
             : "Paused. Middle-click the bar icon captures once without resuming."
           checked: root.service ? root.service.config.enabled : false
           foreground: root.foreground
@@ -145,18 +145,6 @@ Panel {
           visible: root.service && root.service.lastShot !== ""
           text: root.service && root.service.lastShot !== ""
             ? "Latest: " + root.service.lastShot.split("/").pop() : ""
-          textFormat: Text.PlainText
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
-        }
-
-        PanelSeparator { Layout.fillWidth: true; foreground: root.foreground }
-
-        Text {
-          Layout.fillWidth: true
-          text: "Schedule, monitors, format and retention live under the gear at the top right."
           textFormat: Text.PlainText
           color: root.dim
           font.family: root.fontFamily
