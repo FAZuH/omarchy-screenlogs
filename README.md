@@ -9,7 +9,7 @@
 <hr>
 
 <div align="center">
-● <a href="#installation">Installation</a> ﻿ ● <a href="#usage">Usage</a> ﻿ ● <a href="#configuration">Configuration</a> ﻿ ● <a href="#docs">Docs</a> ﻿ ● <a href="#license">License</a>
+● <a href="#installation">Installation</a> ﻿ ● <a href="#preview">Preview</a> ﻿ ● <a href="#usage">Usage</a> ﻿ ● <a href="#configuration">Configuration</a> ﻿ ● <a href="#docs">Docs</a> ﻿ ● <a href="#license">License</a>
 </div>
 
 ## Installation
@@ -17,6 +17,16 @@
 ```bash
 omarchy plugin add https://github.com/FAZuH/omarchy-screenlogs.git --enable
 ```
+
+## Preview
+
+The panel (left click the camera icon):
+
+![Panel](preview/panel.png)
+
+The settings window (the gear in the panel):
+
+![Settings](preview/settings.png)
 
 ## Usage
 
