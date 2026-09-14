@@ -59,8 +59,7 @@ BarWidget {
     function disable(): void { if (root.ready) root.service.setEnabled(false) }
     function status(): string {
       if (!root.ready) return "service unavailable"
-      var s = (root.service.config.enabled ? "enabled · " : "paused · ")
-        + root.service.statusText()
+      var s = root.service.statusText()
         + (root.service.lastError !== "" ? " error=\"" + root.service.lastError + "\"" : "")
         + " dir=" + root.service.config.dir
       return s
