@@ -21,7 +21,7 @@ omarchy plugin add https://github.com/FAZuH/screenlogs.git --enable
 From a local checkout instead:
 
 ```bash
-omarchy plugin add ~/Projects/screenlogs --enable
+omarchy plugin add ~/Work/Omarchy/omarchy-screenlogs --enable
 omarchy plugin enable fazuh.screenlogs right
 ```
 
