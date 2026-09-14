@@ -47,7 +47,6 @@ function monitorList(value) {
   return out
 }
 
-// Accepts "9:5", " 09:05 " etc; returns canonical "HH:MM" or "".
 function parseClock(text) {
   var s = String(text === undefined || text === null ? "" : text).trim()
   var m = /^([0-9]{1,2}):([0-9]{2})$/.exec(s)
@@ -96,10 +95,9 @@ function normalize(raw) {
   }
 }
 
-// An empty monitor list means "every screen", so the box stays correct when a
-// monitor is hotplugged. Unchecking one screen therefore materializes the list
-// to every other screen, and a list that covers every screen collapses back to
-// "all" so a later hotplug is still followed.
+// An empty list means "every screen", so a hotplugged monitor is still
+// captured: unchecking one screen stores the others, and a list covering
+// every screen collapses back to empty.
 function toggleMonitor(selected, screens, name) {
   var list = monitorList(selected)
   var all = monitorList(screens)
@@ -149,9 +147,8 @@ function stamp(epochMs) {
     + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds())
 }
 
-// Builds the whole capture round as one bash script. Values reach bash only
-// inside single quotes; grim failures are recorded per monitor instead of
-// aborting the run, so one dead output never stops the others.
+// Values reach bash only inside single quotes; a failed grim is recorded per
+// monitor instead of aborting the run.
 function captureScript(config, epochMs, targets, home) {
   var cfg = normalize(config)
   var dir = expandHome(cfg.dir, home)
@@ -202,9 +199,8 @@ function captureScript(config, epochMs, targets, home) {
     lines.push("done")
   }
 
-  // ponytail: newline-free file names assumed (`ls | tr` pipeline); a name
-  // with an embedded newline would desync the count. Upgrade to
-  // `find -printf` if that ever bites.
+  // Assumes file names contain no newlines (`ls | tr` pipeline); an embedded
+  // newline would desync COUNT. Upgrade to `find -printf` if that bites.
   lines.push("echo \"LAST=$last\"")
   lines.push("echo \"ERR=$err\"")
   lines.push("echo \"COUNT=$(ls -1 -- *.png *.jpg 2>/dev/null | wc -l | tr -d ' ')\"")
