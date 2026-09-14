@@ -40,10 +40,10 @@ A camera icon appears on the bar:
 Everything is also scriptable over the shell IPC:
 
 ```bash
-omarchy-shell shell call fazuh.screenlogs status    # state, next shot, folder, errors
-omarchy-shell shell call fazuh.screenlogs capture   # one screenshot now
-omarchy-shell shell call fazuh.screenlogs disable   # pause
-omarchy-shell shell call fazuh.screenlogs enable    # resume (captures immediately)
+omarchy-shell fazuh.screenlogs status    # state, last shot, folder, errors
+omarchy-shell fazuh.screenlogs capture   # one screenshot now
+omarchy-shell fazuh.screenlogs disable   # pause
+omarchy-shell fazuh.screenlogs enable    # resume (captures immediately)
 ```
 
 ## Configuration
