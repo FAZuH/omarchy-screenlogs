@@ -1,6 +1,6 @@
 <div align="center">
 
-# screenlogs
+# omarchy-screenlogs
 
 **Periodic screen capture for Omarchy — a fullscreen screenshot every N seconds, straight to disk.**
 
@@ -15,17 +15,12 @@
 ## Installation
 
 ```bash
-omarchy plugin add https://github.com/FAZuH/screenlogs.git --enable
+omarchy plugin add https://github.com/FAZuH/omarchy-screenlogs.git --enable
 ```
 
-From a local checkout instead:
-
-```bash
-omarchy plugin add ~/Work/Omarchy/omarchy-screenlogs --enable
-omarchy plugin enable fazuh.screenlogs right
-```
-
-Requires Omarchy Quattro (the `omarchy plugin` shell). `grim` ships with Omarchy.
+Then place the **Screenlogs** widget on the bar from the shell's widget
+settings. Requires Omarchy Quattro (the `omarchy plugin` shell); `grim` ships
+with Omarchy.
 
 ## Usage
 
@@ -33,42 +28,40 @@ A camera icon appears on the bar:
 
 | Input | Action |
 |---|---|
-| Left click | Open the configuration panel |
+| Left click | Open the panel: enable toggle, capture now, open folder, status |
+| The gear (top right of the panel) | Open the settings window: schedule, monitors, format, retention |
 | Middle click | Capture once, now |
 | Right click | Pause / resume captures |
+
+Captures pause automatically while the screen is locked, outside an optional
+active-hours window, or after the session has been idle for N minutes.
 
 Everything is also scriptable over the shell IPC:
 
 ```bash
 omarchy-shell fazuh.screenlogs status    # state, last shot, folder, errors
 omarchy-shell fazuh.screenlogs capture   # one screenshot now
+omarchy-shell fazuh.screenlogs settings  # open the settings window
 omarchy-shell fazuh.screenlogs disable   # pause
 omarchy-shell fazuh.screenlogs enable    # resume (captures immediately)
 ```
 
 ## Configuration
 
-Open the panel (left click on the bar icon) to set everything live:
+Open the settings window (gear) to edit everything live. Settings are stored
+in `~/.config/omarchy/screenlogs/config.json`, are hot-reloaded on change, and
+can be edited by hand. The defaults capture one PNG per screen every 60
+seconds into `~/Pictures/screenlogs`, keeping the newest 500 files.
 
-| Setting | Default | Meaning |
-|---|---|---|
-| Capture screenshots | on | Master toggle — pause and resume without uninstalling |
-| Every (seconds) | 60 | Seconds between captures (5–86400) |
-| Keep recent screenshots | 500 | Newest N files kept in the folder; 0 keeps everything |
-| Save folder | `~/Pictures/screenlogs` | Created on the next capture; `~` expands |
-| Monitors | all | One file per checked screen; an empty selection follows hotplugged monitors |
-
-Settings live in `~/.config/omarchy/screenlogs/config.json` and can be edited by hand.
-
-Files are named `st-<date>-<time>-<monitor>.png`, e.g. `st-20260915-142530-DP-1.png`.
-Pruning counts files in the save folder, newest first, across all monitors.
-Captures pause while the toggle is off and resume on the next tick.
+The full key reference — active hours, idle pause, PNG/JPEG, and the count,
+age and disk-budget retention rules — is in the
+[Configuration reference](docs/configuration.md).
 
 ## Docs
 
+- [Configuration reference](docs/configuration.md) — every key with its meaning, range, and the pause and pruning semantics
 - [Omarchy shell plugins](https://omarchy.org/manual/shell-plugins/) — how plugin kinds, entry points, and `shell.json` work
-- [Manifest](manifest.json) · [Service](Service.qml) · [Bar widget](BarWidget.qml) · [Panel](Panel.qml) · [Capture logic](Capture.js)
-- Self-check: `node test.mjs`; manifest check: `omarchy plugin validate .`
+- Self-check: `node test.mjs` · Manifest check: `omarchy plugin validate .`
 
 ## License
 
