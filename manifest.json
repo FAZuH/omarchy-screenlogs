@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "fazuh.screenlogs",
+  "name": "Screenlogs",
+  "version": "1.0.0",
+  "author": "FAZuH",
+  "license": "MIT",
+  "description": "Periodic screen capture: a fullscreen screenshot every N seconds, per monitor, with recent-file retention.",
+  "kinds": [
+    "service",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Screenlogs",
+    "description": "Periodic screen capture with monitor selection and retention",
+    "category": "Capture",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "enabled": true,
+      "periodSec": 60,
+      "keep": 500,
+      "dir": "~/Pictures/screenlogs",
+      "monitors": []
+    },
+    "schema": [
+      {
+        "key": "enabled",
+        "type": "boolean",
+        "label": "Capture enabled",
+        "description": "Take a screenshot every period seconds.",
+        "defaultValue": true
+      },
+      {
+        "key": "periodSec",
+        "type": "integer",
+        "label": "Every (seconds)",
+        "description": "Seconds between captures.",
+        "min": 5,
+        "max": 86400,
+        "defaultValue": 60
+      },
+      {
+        "key": "keep",
+        "type": "integer",
+        "label": "Recent screenshots to keep",
+        "description": "Newest N files kept in the folder; 0 keeps everything.",
+        "min": 0,
+        "max": 100000,
+        "defaultValue": 500
+      },
+      {
+        "key": "dir",
+        "type": "string",
+        "label": "Save folder",
+        "description": "~ expands to the home directory.",
+        "defaultValue": "~/Pictures/screenlogs"
+      },
+      {
+        "key": "monitors",
+        "type": "list",
+        "label": "Monitors",
+        "description": "Monitor names to capture; empty captures every screen.",
+        "defaultValue": []
+      }
+    ]
+  }
+}
