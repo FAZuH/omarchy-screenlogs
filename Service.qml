@@ -111,6 +111,10 @@ Item {
     settingsWindow.opened = true
   }
 
+  function toggleSettings() {
+    settingsWindow.opened = !settingsWindow.opened
+  }
+
   function captureNow() {
     if (root.busy) return
     root.busy = true
