@@ -2,7 +2,7 @@
 
 # omarchy-screenlogs
 
-**Periodic screen capture for Omarchy — a fullscreen screenshot every N seconds, straight to disk.**
+**Periodic screen capture for Omarchy**
 
 </div>
 
@@ -17,10 +17,6 @@
 ```bash
 omarchy plugin add https://github.com/FAZuH/omarchy-screenlogs.git --enable
 ```
-
-Then place the **Screenlogs** widget on the bar from the shell's widget
-settings. Requires Omarchy Quattro (the `omarchy plugin` shell); `grim` ships
-with Omarchy.
 
 ## Usage
 
@@ -49,13 +45,9 @@ omarchy-shell fazuh.screenlogs enable    # resume (captures immediately)
 ## Configuration
 
 Open the settings window (gear) to edit everything live. Settings are stored
-in `~/.config/omarchy/screenlogs/config.json`, are hot-reloaded on change, and
-can be edited by hand. The defaults capture one PNG per screen every 60
-seconds into `~/Pictures/screenlogs`, keeping the newest 500 files.
+in `~/.config/omarchy/screenlogs/config.json`.
 
-The full key reference — active hours, idle pause, PNG/JPEG, and the count,
-age and disk-budget retention rules — is in the
-[Configuration reference](docs/configuration.md).
+See [Configuration reference](docs/configuration) for the full key reference.
 
 ## Docs
 
