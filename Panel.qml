@@ -117,7 +117,7 @@ Panel {
 
           Button {
             Layout.fillWidth: true
-            text: "Open folder"
+            text: "Open directory"
             iconText: "󰥨"
             bordered: true
             focusable: true
@@ -125,7 +125,7 @@ Panel {
             foreground: root.foreground
             accent: Color.accent
             fontFamily: root.fontFamily
-            onClicked: if (root.service) root.service.openFolder()
+            onClicked: if (root.service) root.service.openDirectory()
           }
         }
 

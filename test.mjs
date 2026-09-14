@@ -107,7 +107,7 @@ check("stamp is sortable", C.stamp(at), "20260915-142530")
 // ---- capture script: captures ----
 const cfg = (over) => C.normalize(Object.assign({}, C.DEFAULTS, over))
 const script = C.captureScript(cfg({ dir: "~/Pix", keep: 500 }), at, ["DP-1", "eDP 1"], "/home/u")
-check("folder created", script.includes("mkdir -p '/home/u/Pix'"), true)
+check("directory created", script.includes("mkdir -p '/home/u/Pix'"), true)
 check("one grim per monitor", script.match(/grim -o /g).length, 2)
 check("monitor target is the raw name", script.includes("grim -o 'DP-1'"), true)
 check("png needs no type flag", script.includes("-t jpeg"), false)
@@ -135,7 +135,7 @@ check("count prune keeps the newest 500", pruned.includes("tail -n +501"), true)
 check("age prune uses minutes", pruned.includes("-mmin +1440"), true)
 check("age prune off runs no find",
   C.captureScript(cfg({ keepHours: 0 }), at, ["DP-1"], "/home/u").includes("-mmin"), false)
-check("disk prune measures the folder", pruned.includes("du -sm -- ."), true)
+check("disk prune measures the directory", pruned.includes("du -sm -- ."), true)
 check("disk budget 2048 is enforced", pruned.includes("-gt 2048"), true)
 check("disk prune stops when deletions stop helping",
   pruned.includes('[ "$oldest" != "$prev" ]'), true)

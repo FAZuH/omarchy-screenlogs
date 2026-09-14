@@ -137,7 +137,7 @@ function shQuote(value) {
 }
 
 // Only ever used for file names and the error report, never for the grim
-// target: stripping `/` keeps a hand-edited monitor name inside the folder.
+// target: stripping `/` keeps a hand-edited monitor name inside the directory.
 function safeMonitor(name) {
   return String(name).replace(/[^A-Za-z0-9._-]/g, "-")
 }
@@ -195,7 +195,7 @@ function captureScript(config, epochMs, targets, home) {
     lines.push("while [ \"$(du -sm -- . 2>/dev/null | cut -f1)\" -gt " + cfg.maxDiskMb + " ]; do")
     lines.push("  oldest=$(ls -1tr -- *.png *.jpg 2>/dev/null | head -n 1)")
     // The repeat guard ends the loop when the budget can't be met by deleting
-    // screenshots (oversized non-screenshot files in the folder).
+    // screenshots (oversized non-screenshot files in the directory).
     lines.push("  [ -n \"$oldest\" ] && [ \"$oldest\" != \"$prev\" ] || break")
     lines.push("  rm -f -- \"$oldest\"")
     lines.push("  prev=$oldest")

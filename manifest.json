@@ -55,7 +55,7 @@
       {
         "key": "dir",
         "type": "string",
-        "label": "Save folder",
+        "label": "Save directory",
         "description": "~ expands to the home directory.",
         "defaultValue": "~/Pictures/screenlogs"
       },
@@ -116,7 +116,7 @@
         "key": "keep",
         "type": "integer",
         "label": "Recent screenshots to keep",
-        "description": "Newest N files kept in the folder; 0 keeps everything.",
+        "description": "Newest N files kept in the directory; 0 keeps everything.",
         "min": 0,
         "max": 100000,
         "defaultValue": 500
@@ -133,8 +133,8 @@
       {
         "key": "maxDiskMb",
         "type": "integer",
-        "label": "Folder budget (MB)",
-        "description": "Oldest files are deleted until the folder fits; 0 is unlimited.",
+        "label": "directory budget (MB)",
+        "description": "Oldest files are deleted until the directory fits; 0 is unlimited.",
         "min": 0,
         "max": 1048576,
         "defaultValue": 0

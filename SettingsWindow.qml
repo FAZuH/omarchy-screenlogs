@@ -313,7 +313,7 @@ PanelWindow {
 
           Text {
             Layout.fillWidth: true
-            text: "Save folder"
+            text: "Save directory"
             textFormat: Text.PlainText
             color: root.dim
             font.family: root.fontFamily
@@ -388,7 +388,7 @@ PanelWindow {
 
           NumberField {
             Layout.fillWidth: true
-            label: "Folder budget (MB)"
+            label: "Directory budget (MB)"
             from: 0
             to: Capture.DISK_MB_MAX
             stepSize: 100

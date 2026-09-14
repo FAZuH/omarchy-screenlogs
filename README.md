@@ -28,7 +28,7 @@ A camera icon appears on the bar:
 
 | Input | Action |
 |---|---|
-| Left click | Open the panel: enable toggle, capture now, open folder, status |
+| Left click | Open the panel: enable toggle, capture now, open directory, status |
 | The gear (top right of the panel) | Open the settings window: schedule, monitors, format, retention |
 | Middle click | Capture once, now |
 | Right click | Pause / resume captures |
@@ -39,7 +39,7 @@ active-hours window, or after the session has been idle for N minutes.
 Everything is also scriptable over the shell IPC:
 
 ```bash
-omarchy-shell fazuh.screenlogs status    # state, last shot, folder, errors
+omarchy-shell fazuh.screenlogs status    # state, last shot, directory, errors
 omarchy-shell fazuh.screenlogs capture   # one screenshot now
 omarchy-shell fazuh.screenlogs settings   # open / close the settings window
 omarchy-shell fazuh.screenlogs disable   # pause

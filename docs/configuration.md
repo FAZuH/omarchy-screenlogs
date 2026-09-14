@@ -10,7 +10,7 @@ panel) edits the same file through the service.
 |---|---|---|---|
 | `enabled` | boolean | `true` | Master toggle. Pausing never uninstalls anything. |
 | `periodSec` | integer | `60` | Seconds between capture rounds (5–86400). |
-| `dir` | string | `~/Pictures/screenlogs` | Save folder; `~` expands, created on the next capture. |
+| `dir` | string | `~/Pictures/screenlogs` | Save directory; `~` expands, created on the next capture. |
 | `monitors` | list | `[]` | Screen names to capture; see below. |
 | `pauseWhenLocked` | boolean | `true` | Skip captures while the session is locked. |
 | `activeFrom` | string | `""` | First capture hour, `HH:MM`. |
@@ -20,7 +20,7 @@ panel) edits the same file through the service.
 | `jpegQuality` | integer | `85` | grim `-q` value for jpeg, 1–100. |
 | `keep` | integer | `500` | Newest N screenshot files survive each round (0 = unlimited). |
 | `keepHours` | integer | `0` | Delete files older than this many hours (0 = off). |
-| `maxDiskMb` | integer | `0` | Delete oldest files until the folder fits this budget (0 = off). |
+| `maxDiskMb` | integer | `0` | Delete oldest files until the directory fits this budget (0 = off). |
 
 ## Monitors
 
@@ -48,12 +48,12 @@ The panel status shows the current reason. In precedence order:
 
 ## Retention
 
-After every capture round the folder is pruned, in this order:
+After every capture round the directory is pruned, in this order:
 
 1. **Age**: files older than `keepHours` are deleted.
 2. **Count**: past `keep`, the oldest files are deleted until only the newest
    N remain — counted across all monitors, newest first by mtime.
-3. **Disk budget**: while the folder exceeds `maxDiskMb`, the oldest screenshot
+3. **Disk budget**: while the directory exceeds `maxDiskMb`, the oldest screenshot
    is deleted repeatedly (it stops if non-screenshot files alone exceed the
    budget rather than looping).
 

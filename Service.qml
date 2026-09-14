@@ -103,7 +103,7 @@ Item {
     })
   }
 
-  function openFolder() {
+  function openDirectory() {
     openProc.command = ["xdg-open", Capture.expandHome(root.config.dir, root.home)]
     openProc.running = true
   }
