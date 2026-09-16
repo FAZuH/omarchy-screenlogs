@@ -42,8 +42,8 @@ cmd_docs() {
     inf "Compiling Mermaid diagrams..."
 
     if ! command -v mmdc &> /dev/null; then
-        wrn "Mermaid CLI not found. Installing..."
-        npm install -g @mermaid-js/mermaid-cli
+        err "mmdc not found — install @mermaid-js/mermaid-cli, then re-run"
+        return 1
     fi
 
     mkdir -p docs/diagrams

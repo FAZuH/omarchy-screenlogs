@@ -109,7 +109,9 @@ check("stamp pads single-digit fields",
 // ---- capture script: captures ----
 const cfg = (over) => C.normalize(Object.assign({}, C.DEFAULTS, over))
 const script = C.captureScript(cfg({ dir: "~/Pix", keep: 500 }), at, ["DP-1", "eDP 1"], "/home/u")
-check("directory created", script.includes("mkdir -p '/home/u/Pix'"), true)
+check("directory created", script.includes("mkdir -p -- '/home/u/Pix'"), true)
+check("mkdir failure aborts the script",
+  script.includes("mkdir -p -- '/home/u/Pix' 2>/dev/null || { echo \"ERR=directory\"; exit 1; }"), true)
 check("one grim per monitor", script.match(/grim -o /g).length, 2)
 check("monitor target is the raw name", script.includes("grim -o 'DP-1'"), true)
 check("png needs no type flag", script.includes("-t jpeg"), false)
@@ -144,6 +146,10 @@ check("disk prune measures the directory", pruned.includes("du -sm -- ."), true)
 check("disk budget 2048 is enforced", pruned.includes("-gt 2048"), true)
 check("disk prune stops when deletions stop helping",
   pruned.includes('[ "$oldest" != "$prev" ]'), true)
+check("cd failure aborts before retention",
+  pruned.includes("cd -- '/home/u/Pix' 2>/dev/null || { echo \"ERR=directory\"; exit 1; }"), true)
+check("retention never runs before the directory change",
+  pruned.indexOf("cd -- ") < pruned.indexOf("find ."), true)
 check("all prunes off run neither find nor du",
   C.captureScript(cfg({ keep: 0, keepHours: 0, maxDiskMb: 0 }), at, ["DP-1"], "/home/u")
     .includes("du -sm"), false)
@@ -155,7 +161,7 @@ check("file count is reported", script.includes("COUNT="), true)
 
 // ---- capture script: hostile input stays quoted ----
 const evil = C.captureScript(cfg({ dir: "'/tmp x" }), at, ["a'b"], "/home/u")
-check("hostile dir stays one quoted word", evil.includes("mkdir -p ''\\''/tmp x'"), true)
+check("hostile dir stays one quoted word", evil.includes("mkdir -p -- ''\\''/tmp x'"), true)
 check("hostile monitor target stays one quoted word",
   evil.includes("grim -o 'a'\\''b'"), true)
 check("no monitors falls back to one all-screen grim",

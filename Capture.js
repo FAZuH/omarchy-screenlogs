@@ -156,7 +156,7 @@ function captureScript(config, epochMs, targets, home) {
   var ts = stamp(epochMs)
   var list = monitorList(targets)
   var typeArg = cfg.format === "jpeg" ? " -t jpeg -q " + cfg.jpegQuality : ""
-  var lines = ["mkdir -p " + shQuote(dir), "last=", "err="]
+  var lines = ["mkdir -p -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }", "last=", "err="]
 
   // omarchy-hyprland-session-locked exits 0 when locked, 1/2 otherwise
   // (2 = undetermined, which the helper's contract says to treat as unlocked).
@@ -176,7 +176,9 @@ function captureScript(config, epochMs, targets, home) {
       + " || err=\"${err:+$err }" + safeMonitor(name) + "\"")
   }
 
-  lines.push("cd " + shQuote(dir) + " 2>/dev/null || true")
+  // Fail closed: if the directory change fails, relative retention commands
+  // must not fall back to the process's working directory.
+  lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
   if (cfg.keepHours > 0)
     lines.push("find . -maxdepth 1 -type f \\( -name '*.png' -o -name '*.jpg' \\)"
