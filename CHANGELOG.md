@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.1...v0.1.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* fail closed when the screenshot directory is unusable ([d1f99d5](https://github.com/FAZuH/omarchy-screenlogs/commit/d1f99d5b1bdcc30d2eb57bf8024d940ffdbeb586))
+
 ## [0.1.1](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.0...v0.1.1) (2026-09-14)
 
 
