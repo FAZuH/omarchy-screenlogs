@@ -147,6 +147,11 @@ function stamp(epochMs) {
     + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds())
 }
 
+// The plugin's own file-name shape: st-<8 digits>-<6 digits>, optionally
+// followed by a per-monitor suffix. Retention deletes only these, never other
+// images that happen to share the directory.
+var OWNED = "st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*"
+
 // Values reach bash only inside single quotes; a failed grim is recorded per
 // monitor instead of aborting the run.
 function captureScript(config, epochMs, targets, home) {
@@ -180,31 +185,39 @@ function captureScript(config, epochMs, targets, home) {
   // must not fall back to the process's working directory.
   lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
-  if (cfg.keepHours > 0)
-    lines.push("find . -maxdepth 1 -type f \\( -name '*.png' -o -name '*.jpg' \\)"
-      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
-
-  if (cfg.keep > 0)
-    lines.push("ls -1t -- *.png *.jpg 2>/dev/null"
-      + " | tail -n +" + (cfg.keep + 1)
-      + " | tr '\\n' '\\0' | xargs -0 -r rm -f")
-
-  if (cfg.maxDiskMb > 0) {
-    lines.push("prev=")
-    lines.push("while [ \"$(du -sm -- . 2>/dev/null | cut -f1)\" -gt " + cfg.maxDiskMb + " ]; do")
-    lines.push("  oldest=$(ls -1tr -- *.png *.jpg 2>/dev/null | head -n 1)")
-    // The repeat guard ends the loop when the budget can't be met by deleting
-    // screenshots (oversized non-screenshot files in the directory).
-    lines.push("  [ -n \"$oldest\" ] && [ \"$oldest\" != \"$prev\" ] || break")
-    lines.push("  rm -f -- \"$oldest\"")
-    lines.push("  prev=$oldest")
-    lines.push("done")
+  // Retention deletes, so it only runs in a verified plain directory: no
+  // symlinked path component (logical and physical pwd must agree) and never
+  // / or the home directory. Unrelated images are never matched.
+  if (cfg.keepHours > 0 || cfg.keep > 0 || cfg.maxDiskMb > 0) {
+    lines.push("pwdl=$(pwd -L)")
+    lines.push('case "$pwdl" in /|"$HOME") pwdl= ;; esac')
+    lines.push('[ "$pwdl" = "$(pwd -P)" ] || pwdl=')
+    lines.push("if [ -n \"$pwdl\" ]; then")
+    if (cfg.keepHours > 0)
+      lines.push("  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+        + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
+    if (cfg.keep > 0)
+      lines.push("  ls -1t -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null"
+        + " | tail -n +" + (cfg.keep + 1)
+        + " | tr '\\n' '\\0' | xargs -0 -r rm -f")
+    if (cfg.maxDiskMb > 0) {
+      lines.push("  prev=")
+      lines.push("  while [ \"$(du -sm -- . 2>/dev/null | cut -f1)\" -gt " + cfg.maxDiskMb + " ]; do")
+      lines.push("    oldest=$(ls -1tr -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null | head -n 1)")
+      // The repeat guard ends the loop when the budget can't be met by deleting
+      // screenshots (oversized non-screenshot files in the directory).
+      lines.push("    [ -n \"$oldest\" ] && [ \"$oldest\" != \"$prev\" ] || break")
+      lines.push("    rm -f -- \"$oldest\"")
+      lines.push("    prev=$oldest")
+      lines.push("  done")
+    }
+    lines.push("fi")
   }
 
   // Assumes file names contain no newlines (`ls | tr` pipeline); an embedded
   // newline would desync COUNT. Upgrade to `find -printf` if that bites.
   lines.push("echo \"LAST=$last\"")
   lines.push("echo \"ERR=$err\"")
-  lines.push("echo \"COUNT=$(ls -1 -- *.png *.jpg 2>/dev/null | wc -l | tr -d ' ')\"")
+  lines.push("echo \"COUNT=$(ls -1 -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null | wc -l | tr -d ' ')\"")
   return lines.join("\n")
 }

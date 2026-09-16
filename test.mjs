@@ -146,6 +146,21 @@ check("disk prune measures the directory", pruned.includes("du -sm -- ."), true)
 check("disk budget 2048 is enforced", pruned.includes("-gt 2048"), true)
 check("disk prune stops when deletions stop helping",
   pruned.includes('[ "$oldest" != "$prev" ]'), true)
+check("age prune deletes only plugin-named files",
+  pruned.includes("-name 'st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*.png'"), true)
+check("count prune matches the naming convention",
+  pruned.includes("ls -1t -- st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*"), true)
+check("no deletion matches every png or jpg",
+  pruned.includes("-name '*.png'") || pruned.includes("ls -1t -- *.png"), false)
+check("file count uses the naming convention",
+  pruned.includes("COUNT=$(ls -1 -- st-[0-9]"), true)
+check("retention requires a symlink-free path",
+  pruned.includes('[ "$pwdl" = "$(pwd -P)" ] || pwdl='), true)
+check("retention refuses / and the home directory",
+  pruned.includes('case "$pwdl" in /|"$HOME") pwdl= ;; esac'), true)
+check("prunes run inside the verified-directory guard",
+  pruned.indexOf('if [ -n "$pwdl" ]; then') > -1
+    && pruned.indexOf("find .") > pruned.indexOf('if [ -n "$pwdl" ]'), true)
 check("cd failure aborts before retention",
   pruned.includes("cd -- '/home/u/Pix' 2>/dev/null || { echo \"ERR=directory\"; exit 1; }"), true)
 check("retention never runs before the directory change",
@@ -153,6 +168,9 @@ check("retention never runs before the directory change",
 check("all prunes off run neither find nor du",
   C.captureScript(cfg({ keep: 0, keepHours: 0, maxDiskMb: 0 }), at, ["DP-1"], "/home/u")
     .includes("du -sm"), false)
+check("all prunes off skip the retention guard",
+  C.captureScript(cfg({ keep: 0, keepHours: 0, maxDiskMb: 0 }), at, ["DP-1"], "/home/u")
+    .includes("pwdl"), false)
 
 // ---- capture script: reporting ----
 check("last shot is reported", script.includes('echo "LAST=$last"'), true)

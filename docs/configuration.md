@@ -59,6 +59,12 @@ After every capture round the directory is pruned, in this order:
 
 All three default sensibly: count 500, age and budget off.
 
+Retention only ever deletes files named by the plugin itself
+(`st-<date>-<time>…`, see Files). Other images in the directory are never
+touched. It is skipped for a round when the directory path contains a
+symlinked component, or when the directory is `/` or the home directory —
+capture still runs there, deletion does not.
+
 ## Files
 
 Names are `st-<YYYYMMDD>-<HHMMSS>-<monitor>.png` (or `.jpg`), or
