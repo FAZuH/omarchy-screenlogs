@@ -1,3 +1,10 @@
+## [0.1.3](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.2...v0.1.3) (2026-09-16)
+
+
+### Bug Fixes
+
+* confine retention to plugin-named files in verified directories ([08bc9ba](https://github.com/FAZuH/omarchy-screenlogs/commit/08bc9ba620aa60fbbf8011ee7830fdf40d4f551b))
+
 ## [0.1.2](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.1...v0.1.2) (2026-09-16)
 
 
