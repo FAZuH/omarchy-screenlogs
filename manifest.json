@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "fazuh.screenlogs",
   "name": "Screenlogs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "FAZuH",
   "license": "MIT",
   "description": "Periodic screen capture: a fullscreen screenshot every N seconds, per monitor, with lock/idle/active-hours pauses and count, age and disk-budget retention.",
