@@ -73,16 +73,16 @@ function normalize(raw) {
   var cfg = raw && typeof raw === "object" ? raw : {}
   var dir = typeof cfg.dir === "string" ? cfg.dir.trim() : ""
   return {
-    enabled: cfg.enabled === undefined || cfg.enabled === null
-      ? DEFAULTS.enabled : cfg.enabled === true,
+    // `== null` is the "absent" test, so only a key the user actually set can
+    // move off the default; anything present must be exactly `true`.
+    enabled: cfg.enabled == null ? DEFAULTS.enabled : cfg.enabled === true,
     periodSec: clamped(cfg.periodSec, DEFAULTS.periodSec, PERIOD_MIN, PERIOD_MAX),
     keep: clamped(cfg.keep, DEFAULTS.keep, 0, KEEP_MAX),
     keepHours: clamped(cfg.keepHours, DEFAULTS.keepHours, 0, KEEP_HOURS_MAX),
     maxDiskMb: clamped(cfg.maxDiskMb, DEFAULTS.maxDiskMb, 0, DISK_MB_MAX),
     dir: dir || DEFAULTS.dir,
     monitors: monitorList(cfg.monitors),
-    pauseWhenLocked: cfg.pauseWhenLocked === undefined || cfg.pauseWhenLocked === null
-      ? DEFAULTS.pauseWhenLocked : cfg.pauseWhenLocked === true,
+    pauseWhenLocked: cfg.pauseWhenLocked == null ? DEFAULTS.pauseWhenLocked : cfg.pauseWhenLocked === true,
     activeFrom: parseClock(cfg.activeFrom),
     activeTo: parseClock(cfg.activeTo),
     idleMinutes: clamped(cfg.idleMinutes, DEFAULTS.idleMinutes, 0, IDLE_MINUTES_MAX),
