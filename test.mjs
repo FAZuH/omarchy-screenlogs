@@ -1,4 +1,4 @@
-// Run: node test.mjs — self-check for Capture.js config and shell-script logic.
+// Run: node test.mjs. Self-check for Capture.js config and shell-script logic.
 import { readFileSync, mkdtempSync, writeFileSync, utimesSync, readdirSync, mkdirSync, symlinkSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"

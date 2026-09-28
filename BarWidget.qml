@@ -76,8 +76,8 @@ BarWidget {
     active: root.ready && root.service.busy
     tooltipText: !root.ready ? "Screenlogs unavailable"
       : (root.service.config.enabled
-          ? "Screenlogs — " + root.service.statusText()
-          : "Screenlogs — paused")
+          ? "Screenlogs: " + root.service.statusText()
+          : "Screenlogs: paused")
     onPressed: function(code) {
       if (code === Qt.LeftButton) root.toggle()
       else if (code === Qt.MiddleButton && root.ready) root.service.captureNow()

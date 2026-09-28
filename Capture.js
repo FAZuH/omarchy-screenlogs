@@ -252,7 +252,7 @@ function captureScript(config, epochMs, targets, home) {
   // `prune` gates deletion, `measure` only gates du: a symlinked directory is
   // still worth reporting a size for, and refusing to is what made the broken
   // limit invisible. Both answers come from the one probe the settings window
-  // validates with — a hand-rolled second copy of the rule is how `prune` ended
+  // validates with. A hand-rolled second copy of the rule is how `prune` ended
   // up set in `/` and `$HOME` while that probe called them UNSAFE.
   lines.push("prune=")
   lines.push("measure=$(pwd -L)")
@@ -268,7 +268,7 @@ function captureScript(config, epochMs, targets, home) {
   lines.push("own=$(" + scan + ")")
   // Each prune carries its own guard, the same shape the budget loop below
   // already uses. Collecting them first to share one guard needs a count
-  // check, because bash rejects an empty `if … fi` — and an empty guard is
+  // check, because bash rejects an empty `if … fi`, and an empty guard is
   // exactly what one limit switching off produces.
   if (cfg.keepHours > 0)
     lines.push('if [ -n "$prune" ]; then', "  " + owned
@@ -279,7 +279,7 @@ function captureScript(config, epochMs, targets, home) {
       "  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
         + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f", "fi")
   // du measures the whole directory, so non-screenshot files count against the
-  // budget and are never deleted — the loop simply runs out of owned files
+  // budget and are never deleted, so the loop simply runs out of owned files
   // first. Blocks are 512-byte units and du rounds each file up to a whole KB,
   // so subtract it the same way or the loop stops short of the budget.
   lines.push('if [ -n "$measure" ]; then')
