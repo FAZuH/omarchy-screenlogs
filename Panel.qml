@@ -18,6 +18,17 @@ Panel {
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
+  // The small lines under the buttons: the error if there is one, the last
+  // file name otherwise.
+  component Foot: Text {
+    Layout.fillWidth: true
+    textFormat: Text.PlainText
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
+  }
+
   function open() { controller.show() }
   function close() { controller.hide() }
   function toggle() { opened ? close() : open() }
@@ -129,27 +140,16 @@ Panel {
           }
         }
 
-        Text {
-          Layout.fillWidth: true
+        Foot {
           visible: root.service && root.service.lastError !== ""
           text: root.service ? "Failed: " + root.service.lastError : ""
-          textFormat: Text.PlainText
           color: root.urgent
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
         }
 
-        Text {
-          Layout.fillWidth: true
+        Foot {
           visible: root.service && root.service.lastShot !== ""
           text: root.service && root.service.lastShot !== ""
             ? "Latest: " + root.service.lastShot.split("/").pop() : ""
-          textFormat: Text.PlainText
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
         }
       }
     }
