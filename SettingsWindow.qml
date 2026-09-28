@@ -298,8 +298,8 @@ PanelWindow {
             Layout.fillWidth: true
             visible: root.service && root.service.config.format === "jpeg"
             label: "JPEG quality"
-            from: 1
-            to: 100
+            from: Capture.JPEG_QUALITY_MIN
+            to: Capture.JPEG_QUALITY_MAX
             stepSize: 5
             value: root.service ? root.service.config.jpegQuality : Capture.DEFAULTS.jpegQuality
             foreground: root.text

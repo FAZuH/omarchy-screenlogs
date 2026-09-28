@@ -22,15 +22,13 @@ var KEEP_MAX = 100000
 var KEEP_HOURS_MAX = 87600
 var DISK_MB_MAX = 1048576
 var IDLE_MINUTES_MAX = 1440
-
-function integer(value, fallback) {
-  var parsed = Number(value)
-  return isFinite(parsed) && Math.floor(parsed) === parsed ? parsed : fallback
-}
+var JPEG_QUALITY_MIN = 1
+var JPEG_QUALITY_MAX = 100
 
 function clamped(value, fallback, min, max) {
-  var parsed = integer(value, fallback)
-  return parsed < min || parsed > max ? fallback : parsed
+  var n = Number(value)
+  var v = isFinite(n) && Math.floor(n) === n ? n : fallback
+  return v < min || v > max ? fallback : v
 }
 
 function monitorList(value) {
@@ -77,21 +75,22 @@ function normalize(raw) {
   var cfg = raw && typeof raw === "object" ? raw : {}
   var dir = typeof cfg.dir === "string" ? cfg.dir.trim() : ""
   return {
-    enabled: cfg.enabled === undefined || cfg.enabled === null
-      ? DEFAULTS.enabled : cfg.enabled === true,
+    // `== null` is the "absent" test, so only a key the user actually set can
+    // move off the default; anything present must be exactly `true`.
+    enabled: cfg.enabled == null ? DEFAULTS.enabled : cfg.enabled === true,
     periodSec: clamped(cfg.periodSec, DEFAULTS.periodSec, PERIOD_MIN, PERIOD_MAX),
     keep: clamped(cfg.keep, DEFAULTS.keep, 0, KEEP_MAX),
     keepHours: clamped(cfg.keepHours, DEFAULTS.keepHours, 0, KEEP_HOURS_MAX),
     maxDiskMb: clamped(cfg.maxDiskMb, DEFAULTS.maxDiskMb, 0, DISK_MB_MAX),
     dir: dir || DEFAULTS.dir,
     monitors: monitorList(cfg.monitors),
-    pauseWhenLocked: cfg.pauseWhenLocked === undefined || cfg.pauseWhenLocked === null
-      ? DEFAULTS.pauseWhenLocked : cfg.pauseWhenLocked === true,
+    pauseWhenLocked: cfg.pauseWhenLocked == null ? DEFAULTS.pauseWhenLocked : cfg.pauseWhenLocked === true,
     activeFrom: parseClock(cfg.activeFrom),
     activeTo: parseClock(cfg.activeTo),
     idleMinutes: clamped(cfg.idleMinutes, DEFAULTS.idleMinutes, 0, IDLE_MINUTES_MAX),
     format: cfg.format === "jpeg" ? "jpeg" : "png",
-    jpegQuality: clamped(cfg.jpegQuality, DEFAULTS.jpegQuality, 1, 100)
+    jpegQuality: clamped(cfg.jpegQuality, DEFAULTS.jpegQuality,
+      JPEG_QUALITY_MIN, JPEG_QUALITY_MAX)
   }
 }
 
@@ -110,14 +109,12 @@ function toggleMonitor(selected, screens, name) {
   var idx = list.indexOf(name)
   if (idx === -1) list.push(name)
   else list.splice(idx, 1)
-  return coversAll(list, all) ? [] : list
-}
-
-function coversAll(list, screens) {
-  if (screens.length === 0) return false
-  for (var i = 0; i < screens.length; i++)
-    if (list.indexOf(screens[i]) === -1) return false
-  return true
+  // Covers every screen, so collapse back to the empty list that means "all".
+  // With no screens there is nothing to cover, so an empty list stays explicit.
+  if (all.length === 0) return list
+  for (var j = 0; j < all.length; j++)
+    if (list.indexOf(all[j]) === -1) return list
+  return []
 }
 
 function isMonitorSelected(selected, name) {
@@ -152,8 +149,10 @@ function stamp(epochMs) {
 // images that happen to share the directory.
 var OWNED = "st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*"
 
+// The locale is pinned rather than left to the session: a de_DE user would
+// otherwise read `5.000` in the readouts the tests pin to `5,000`.
 function groupDigits(n) {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return n.toLocaleString("en-US")
 }
 
 // Coarse on purpose: a caption, not a stopwatch. Seconds, then minutes, then
@@ -250,41 +249,39 @@ function captureScript(config, epochMs, targets, home) {
   // must not fall back to the process's working directory.
   lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
-  // Retention deletes, so it only prunes a directory it can prove it is in: no
-  // symlinked path component (logical and physical pwd must agree) and never /
-  // or the home directory. Settings validation steers the user to a real path
-  // rather than this silently refusing to prune; see dirCheckScript.
-  var scan = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-    + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
-  // `prune` gates deletion, `measure` only gates du — a symlinked directory is
+  var owned = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+  var scan = owned + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
+  // `prune` gates deletion, `measure` only gates du: a symlinked directory is
   // still worth reporting a size for, and refusing to is what made the broken
-  // limit invisible in the first place.
-  lines.push("prune=$(pwd -L)")
+  // limit invisible. Both answers come from the one probe the settings window
+  // validates with. A hand-rolled second copy of the rule is how `prune` ended
+  // up set in `/` and `$HOME` while that probe called them UNSAFE.
+  lines.push("prune=")
   lines.push("measure=$(pwd -L)")
-  lines.push('case "$measure" in /|"$HOME") measure= ;; esac')
-  lines.push('[ "$prune" = "$(pwd -P)" ] || prune=')
+  lines.push("check=$(" + dirCheckScript(dir) + ")")
+  lines.push('case "$check" in')
+  lines.push("  SAME) prune=yes ;;")
+  lines.push("  UNSAFE) prune=; measure= ;;")
+  lines.push("  *) prune= ;;")
+  lines.push("esac")
   // One scan feeds retention and the settings window's usage readouts. Never a
   // shell glob: past ~65k files the pattern overflows ARG_MAX and ls reports
   // nothing, which silently disabled the count and budget limits.
   lines.push("own=$(" + scan + ")")
-  // bash rejects an empty `if … fi`, so the wrapper only appears when it has
-  // something to run — a budget-only config still needs the count and age
-  // prunes left out entirely.
-  var deletePrunes = []
+  // Each prune carries its own guard, the same shape the budget loop below
+  // already uses. Collecting them first to share one guard needs a count
+  // check, because bash rejects an empty `if … fi`, and an empty guard is
+  // exactly what one limit switching off produces.
   if (cfg.keepHours > 0)
-    deletePrunes.push("  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
+    lines.push('if [ -n "$prune" ]; then', "  " + owned
+      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null", "fi")
   if (cfg.keep > 0)
     // `own` runs oldest first, so "all but the newest N" is what has to go.
-    deletePrunes.push("  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
-      + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f")
-  if (deletePrunes.length > 0) {
-    lines.push('if [ -n "$prune" ]; then')
-    for (var d = 0; d < deletePrunes.length; d++) lines.push(deletePrunes[d])
-    lines.push("fi")
-  }
+    lines.push('if [ -n "$prune" ]; then',
+      "  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
+        + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f", "fi")
   // du measures the whole directory, so non-screenshot files count against the
-  // budget and are never deleted — the loop simply runs out of owned files
+  // budget and are never deleted, so the loop simply runs out of owned files
   // first. Blocks are 512-byte units and du rounds each file up to a whole KB,
   // so subtract it the same way or the loop stops short of the budget.
   lines.push('if [ -n "$measure" ]; then')

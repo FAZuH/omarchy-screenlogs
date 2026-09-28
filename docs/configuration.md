@@ -34,14 +34,14 @@ fails to capture is reported in the status without stopping the others.
 
 The panel status shows the current reason. In precedence order:
 
-1. `enabled: false` — paused by you.
-2. Screen locked — Omarchy's own `omarchy-hyprland-session-locked` check runs
+1. `enabled: false`: paused by you.
+2. Screen locked. Omarchy's own `omarchy-hyprland-session-locked` check runs
    before each round; an undetermined result counts as unlocked. The first
    capture follows shortly after unlock.
-3. Idle — uses the compositor's idle clock (the same mechanism as Omarchy's
+3. Idle. Uses the compositor's idle clock (the same mechanism as Omarchy's
    idle service, screen-saver inhibitors respected), so a video or presentation
    that inhibits idle does not trigger the pause.
-4. Outside the active-hours window — `activeFrom`/`activeTo` as `HH:MM`.
+4. Outside the active-hours window: `activeFrom`/`activeTo` as `HH:MM`.
    Blank or equal bounds mean always active; a start later than the end wraps
    past midnight, so `22:00`–`06:00` covers the night. The start instant is
    active, the end instant is not.
@@ -52,7 +52,7 @@ After every capture round the directory is pruned, in this order:
 
 1. **Age**: files older than `keepHours` are deleted.
 2. **Count**: past `keep`, the oldest files are deleted until only the newest
-   N remain — counted across all monitors, newest first by mtime.
+   N remain, counted across all monitors, newest first by mtime.
 3. **Disk budget**: while the directory exceeds `maxDiskMb`, the oldest screenshot
    is deleted repeatedly (it stops if non-screenshot files alone exceed the
    budget rather than looping).
@@ -70,7 +70,7 @@ folder but is not one, and retention quietly does nothing. The settings window
 checks the path before saving it, names the real path when the check fails, and
 offers a button that switches to it. The panel status also says
 `retention off (symlinked directory)` whenever a limit is configured but the
-directory is one retention will not touch — the limit is not enforced, and
+directory is one retention will not touch. The limit is not enforced, and
 pretending otherwise is what made this hard to spot.
 
 Only deletion is gated on this. The size and file-count readouts are measured

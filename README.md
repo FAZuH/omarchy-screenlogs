@@ -72,8 +72,8 @@ See [Configuration reference](docs/configuration.md) for the full key reference.
 
 ## Docs
 
-- [Configuration reference](docs/configuration.md) — every key with its meaning, range, and the pause and pruning semantics
-- [Omarchy shell plugins](https://omarchy.org/manual/shell-plugins/) — how plugin kinds, entry points, and `shell.json` work
+- [Configuration reference](docs/configuration.md): every key with its meaning, range, and the pause and pruning semantics
+- [Omarchy shell plugins](https://omarchy.org/manual/shell-plugins/): how plugin kinds, entry points, and `shell.json` work
 - Self-check: `node test.mjs` · Manifest check: `omarchy plugin validate .`
 
 ## License

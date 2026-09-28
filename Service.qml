@@ -9,7 +9,7 @@ Item {
 
   // Config lives in this plugin's own file rather than inline in shell.json:
   // it survives the widget being removed from the bar, and every edit routes
-  // through this service — the single writer.
+  // through this service, the single writer.
   readonly property string home: Quickshell.env("HOME")
   readonly property string configDir: home + "/.config/omarchy/screenlogs"
   readonly property string configPath: configDir + "/config.json"
@@ -65,10 +65,10 @@ Item {
   function statusText() {
     if (!root.loaded) return "Starting…"
     if (!root.config.enabled) return "Paused"
-    if (root.locked) return "Paused — screen locked"
-    if (root.idlePaused) return "Paused — idle"
+    if (root.locked) return "Paused: screen locked"
+    if (root.idlePaused) return "Paused: idle"
     if (!Capture.isWithinActiveHours(root.config.activeFrom, root.config.activeTo, new Date(root.nowMs)))
-      return "Paused — outside " + root.config.activeFrom + "–" + root.config.activeTo
+      return "Paused: outside " + root.config.activeFrom + "–" + root.config.activeTo
     var s = "Every " + root.config.periodSec + "s"
     if (root.lastShotAt > 0)
       s += " · last " + Qt.formatDateTime(new Date(root.lastShotAt), "HH:mm:ss")
@@ -114,10 +114,7 @@ Item {
   }
 
   function saveConfig(patch) {
-    var next = ({})
-    for (var key in root.config) next[key] = root.config[key]
-    for (var p in patch) next[p] = patch[p]
-    applyConfig(JSON.stringify(Capture.normalize(next)))
+    applyConfig(JSON.stringify(Capture.normalize(Object.assign({}, root.config, patch))))
     configFile.setText(JSON.stringify(root.config, null, 2) + "\n")
   }
 

@@ -22,13 +22,15 @@ BarWidget {
   function close() { if (panelLoader.item) panelLoader.item.close() }
   function toggle() { if (panelLoader.item) panelLoader.item.toggle() }
 
+  // The Loader's only source is this repo's own Panel.qml, which declares all
+  // four, so the assignments need no existence checks.
   function injectPanel() {
     var target = panelLoader.item
     if (!target) return
-    if ("bar" in target) target.bar = root.bar
-    if ("anchorItem" in target) target.anchorItem = button
-    if ("hostWidget" in target) target.hostWidget = root
-    if ("service" in target) target.service = root.service
+    target.bar = root.bar
+    target.anchorItem = button
+    target.hostWidget = root
+    target.service = root.service
   }
 
   onBarChanged: injectPanel()
@@ -36,7 +38,6 @@ BarWidget {
 
   Loader {
     id: panelLoader
-    active: true
     source: Qt.resolvedUrl("Panel.qml")
     visible: false
     onLoaded: {
@@ -75,8 +76,8 @@ BarWidget {
     active: root.ready && root.service.busy
     tooltipText: !root.ready ? "Screenlogs unavailable"
       : (root.service.config.enabled
-          ? "Screenlogs — " + root.service.statusText()
-          : "Screenlogs — paused")
+          ? "Screenlogs: " + root.service.statusText()
+          : "Screenlogs: paused")
     onPressed: function(code) {
       if (code === Qt.LeftButton) root.toggle()
       else if (code === Qt.MiddleButton && root.ready) root.service.captureNow()
