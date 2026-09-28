@@ -7,8 +7,10 @@ import { join } from "node:path"
 const src = readFileSync(new URL("./Capture.js", import.meta.url), "utf8")
   .replace(/^\.pragma library\s*/, "")
 const C = new Function(src +
-  "\nreturn { DEFAULTS, normalize, parseClock, isWithinActiveHours, toggleMonitor," +
-  " isMonitorSelected, expandHome, shQuote, safeMonitor, stamp," +
+  "\nreturn { DEFAULTS, PERIOD_MIN, PERIOD_MAX, KEEP_MAX, KEEP_HOURS_MAX," +
+  " DISK_MB_MAX, IDLE_MINUTES_MAX, JPEG_QUALITY_MIN, JPEG_QUALITY_MAX," +
+  " normalize, parseClock, isWithinActiveHours," +
+  " toggleMonitor, isMonitorSelected, expandHome, shQuote, safeMonitor, stamp," +
   " groupDigits, formatAge, countUsage, ageUsage, budgetUsage, dirCheckScript," +
   " collapseHome, dirNotice, captureScript }")()
 
@@ -366,5 +368,31 @@ check("budget readout omits the delta when the limit is off",
   C.budgetUsage(120, 0), "120 MB used")
 check("budget readout admits an unmeasurable size", C.budgetUsage(-1, 5000),
   "size unknown")
+
+// ---- the manifest repeats every range and default by hand ----
+// Nothing stopped a key's min, max or default from drifting away from the
+// constants Capture.js validates against, so the manifest is checked here. The
+// settings window's NumberField bounds are not: the test cannot read QML, so
+// those are covered by the same check in reverse, by pointing them at the
+// constants rather than at literals.
+const manifest = JSON.parse(
+  readFileSync(new URL("./manifest.json", import.meta.url), "utf8"))
+const schema = Object.fromEntries(manifest.barWidget.schema.map((s) => [s.key, s]))
+const RANGES = {
+  periodSec: [C.PERIOD_MIN, C.PERIOD_MAX],
+  keep: [0, C.KEEP_MAX],
+  keepHours: [0, C.KEEP_HOURS_MAX],
+  maxDiskMb: [0, C.DISK_MB_MAX],
+  idleMinutes: [0, C.IDLE_MINUTES_MAX],
+  jpegQuality: [C.JPEG_QUALITY_MIN, C.JPEG_QUALITY_MAX]
+}
+check("the manifest documents every key the config has, and no others",
+  Object.keys(schema).sort(), Object.keys(C.DEFAULTS).sort())
+for (const [key, value] of Object.entries(C.DEFAULTS)) {
+  check(`manifest default for ${key}`, schema[key].defaultValue, value)
+  check(`manifest defaults block for ${key}`, manifest.barWidget.defaults[key], value)
+}
+for (const [key, [min, max]] of Object.entries(RANGES))
+  check(`manifest range for ${key}`, [schema[key].min, schema[key].max], [min, max])
 
 process.exit(failed ? 1 : 0)

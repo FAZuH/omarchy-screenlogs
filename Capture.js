@@ -22,6 +22,8 @@ var KEEP_MAX = 100000
 var KEEP_HOURS_MAX = 87600
 var DISK_MB_MAX = 1048576
 var IDLE_MINUTES_MAX = 1440
+var JPEG_QUALITY_MIN = 1
+var JPEG_QUALITY_MAX = 100
 
 function clamped(value, fallback, min, max) {
   var n = Number(value)
@@ -87,7 +89,8 @@ function normalize(raw) {
     activeTo: parseClock(cfg.activeTo),
     idleMinutes: clamped(cfg.idleMinutes, DEFAULTS.idleMinutes, 0, IDLE_MINUTES_MAX),
     format: cfg.format === "jpeg" ? "jpeg" : "png",
-    jpegQuality: clamped(cfg.jpegQuality, DEFAULTS.jpegQuality, 1, 100)
+    jpegQuality: clamped(cfg.jpegQuality, DEFAULTS.jpegQuality,
+      JPEG_QUALITY_MIN, JPEG_QUALITY_MAX)
   }
 }
 
