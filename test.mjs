@@ -8,7 +8,7 @@ const src = readFileSync(new URL("./Capture.js", import.meta.url), "utf8")
   .replace(/^\.pragma library\s*/, "")
 const C = new Function(src +
   "\nreturn { DEFAULTS, normalize, parseClock, isWithinActiveHours, toggleMonitor," +
-  " isMonitorSelected, coversAll, expandHome, shQuote, safeMonitor, stamp," +
+  " isMonitorSelected, expandHome, shQuote, safeMonitor, stamp," +
   " groupDigits, formatAge, countUsage, ageUsage, budgetUsage, dirCheckScript," +
   " collapseHome, dirNotice, captureScript }")()
 
@@ -96,8 +96,10 @@ check("adding the last missing screen collapses to all",
   C.toggleMonitor(["DP-1", "eDP-1"], screens, "HDMI-A-1"), [])
 check("removing from an explicit list keeps it explicit",
   C.toggleMonitor(["DP-1", "eDP-1"], screens, "DP-1"), ["eDP-1"])
-check("coversAll is false with no screens (nothing to cover)",
-  C.coversAll([], []), false)
+check("with no screens there is nothing to cover, so a list stays explicit",
+  C.toggleMonitor(["DP-1"], [], "HDMI-A-1"), ["DP-1", "HDMI-A-1"])
+check("unchecking the last of an explicit list with no screens empties it",
+  C.toggleMonitor(["DP-1"], [], "DP-1"), [])
 
 // ---- paths and quoting ----
 check("~ expands", C.expandHome("~/Pictures/screenlogs", "/home/u"), "/home/u/Pictures/screenlogs")

@@ -106,14 +106,12 @@ function toggleMonitor(selected, screens, name) {
   var idx = list.indexOf(name)
   if (idx === -1) list.push(name)
   else list.splice(idx, 1)
-  return coversAll(list, all) ? [] : list
-}
-
-function coversAll(list, screens) {
-  if (screens.length === 0) return false
-  for (var i = 0; i < screens.length; i++)
-    if (list.indexOf(screens[i]) === -1) return false
-  return true
+  // Covers every screen, so collapse back to the empty list that means "all".
+  // With no screens there is nothing to cover, so an empty list stays explicit.
+  if (all.length === 0) return list
+  for (var j = 0; j < all.length; j++)
+    if (list.indexOf(all[j]) === -1) return list
+  return []
 }
 
 function isMonitorSelected(selected, name) {
