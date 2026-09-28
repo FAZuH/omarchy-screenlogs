@@ -250,19 +250,21 @@ function captureScript(config, epochMs, targets, home) {
   // must not fall back to the process's working directory.
   lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
-  // Retention deletes, so it only prunes a directory it can prove it is in: no
-  // symlinked path component (logical and physical pwd must agree) and never /
-  // or the home directory. Settings validation steers the user to a real path
-  // rather than this silently refusing to prune; see dirCheckScript.
   var scan = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
     + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
-  // `prune` gates deletion, `measure` only gates du — a symlinked directory is
+  // `prune` gates deletion, `measure` only gates du: a symlinked directory is
   // still worth reporting a size for, and refusing to is what made the broken
-  // limit invisible in the first place.
-  lines.push("prune=$(pwd -L)")
+  // limit invisible. Both answers come from the one probe the settings window
+  // validates with — a hand-rolled second copy of the rule is how `prune` ended
+  // up set in `/` and `$HOME` while that probe called them UNSAFE.
+  lines.push("prune=")
   lines.push("measure=$(pwd -L)")
-  lines.push('case "$measure" in /|"$HOME") measure= ;; esac')
-  lines.push('[ "$prune" = "$(pwd -P)" ] || prune=')
+  lines.push("check=$(" + dirCheckScript(dir) + ")")
+  lines.push('case "$check" in')
+  lines.push("  SAME) prune=yes ;;")
+  lines.push("  UNSAFE) prune=; measure= ;;")
+  lines.push("  *) prune= ;;")
+  lines.push("esac")
   // One scan feeds retention and the settings window's usage readouts. Never a
   // shell glob: past ~65k files the pattern overflows ARG_MAX and ls reports
   // nothing, which silently disabled the count and budget limits.

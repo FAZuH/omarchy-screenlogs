@@ -170,16 +170,21 @@ check("no ls glob survives: past ~65k files ARG_MAX zeroes the listing",
   /ls -1[a-z]* -- st-/.test(pruned), false)
 check("file count uses the naming convention",
   pruned.includes("own=$(find . -maxdepth 1 -type f") && pruned.includes("COUNT=$(printf"), true)
+// The capture script must ask the same question the settings window asks. If it
+// ever carries its own copy of the rule, the two can drift and retention can
+// delete somewhere the window promised it would not.
+check("the capture script reuses the probe's rule rather than copying it",
+  C.dirCheckScript("/x").split("\n").slice(1).every((l) => pruned.includes(l)), true)
 check("retention refuses a symlinked path",
-  pruned.includes('[ "$prune" = "$(pwd -P)" ] || prune='), true)
-check("retention refuses / and the home directory",
-  pruned.includes('case "$measure" in /|"$HOME") measure= ;; esac'), true)
+  pruned.includes('  *) prune= ;;'), true)
+check("retention refuses / and the home directory for deletion, not just for du",
+  pruned.includes("  UNSAFE) prune=; measure= ;;"), true)
 check("the budget loop is gated on deletion being safe",
   pruned.indexOf("while IFS=$'\\t' read")
     > pruned.lastIndexOf('if [ -n "$prune" ]; then'), true)
 check("the size readout is not gated on deletion being safe",
   pruned.includes("du -sk -- .")
-    && pruned.indexOf("du -sk -- .") > pruned.indexOf('[ "$prune" = "$(pwd -P)" ] || prune='), true)
+    && pruned.indexOf("du -sk -- .") > pruned.indexOf('case "$check" in'), true)
 check("prunes run inside the deletion guard",
   pruned.indexOf("head -n -500") > pruned.indexOf('if [ -n "$prune" ]; then')
     && pruned.indexOf("head -n -500") < pruned.indexOf("budget=$(( 2048 * 1024 ))"), true)
@@ -246,12 +251,13 @@ function pruneDir(files, options) {
   const root = mkdtempSync(join(tmpdir(), "screenlogs-"))
   try {
     // config.link puts the save directory behind a symlink, the shape a stock
-    // Omarchy ~/Pictures has; config.report returns the script's stdout instead
-    // of the files left behind.
-    const { link = false, report = false, ...config } = options
+    // Omarchy ~/Pictures has; config.homeAsDir makes the save directory the home
+    // directory itself, which the probe calls UNSAFE; config.report returns the
+    // script's stdout instead of the files left behind.
+    const { link = false, homeAsDir = false, report = false, ...config } = options
     mkdirSync(join(root, "real", "shots"), { recursive: true })
     symlinkSync(join(root, "real"), join(root, "link"))
-    const dir = join(root, link ? "link" : "real", "shots")
+    const dir = homeAsDir ? root : join(root, link ? "link" : "real", "shots")
     for (let i = 0; i < files; i++) {
       const p = join(dir, "st-2026092" + (i % 9) + "-" + String(i).padStart(6, "0") + ".png")
       writeFileSync(p, "x".repeat(4096))
@@ -259,7 +265,8 @@ function pruneDir(files, options) {
     }
     writeFileSync(join(dir, "not-ours.png"), "x".repeat(4096))
     const script = C.captureScript(C.normalize({ ...config, dir }), at, [], root)
-    const out = execFileSync("bash", ["-c", script.slice(script.indexOf("prune=$(pwd"))],
+    // Retention is everything after the directory change.
+    const out = execFileSync("bash", ["-c", script.slice(script.indexOf("cd -- "))],
       { cwd: dir, env: { ...process.env, HOME: root } }).toString()
     return report ? out : readdirSync(dir).sort()
   } finally {
@@ -281,6 +288,12 @@ check("budget prunes through a symlinked path",
 check("all limits off delete nothing", pruneDir(30, {}).length, 31)
 check("a symlinked directory keeps every file",
   pruneDir(30, { maxDiskMb: 1, link: true }).length, 31)
+// Aggressive limits against $HOME itself must delete exactly as much as no
+// limits at all. Compared rather than counted, so the harness's own scaffolding
+// directories do not have to be in the expected number.
+check("the home directory keeps every file",
+  pruneDir(30, { keep: 5, keepHours: 1, maxDiskMb: 1, homeAsDir: true }).length,
+  pruneDir(30, { homeAsDir: true }).length)
 check("a symlinked directory still reports a size",
   /\nSIZE=\d/.test(pruneDir(30, { maxDiskMb: 1, link: true, report: true })), true)
 
