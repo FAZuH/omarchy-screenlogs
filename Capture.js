@@ -250,8 +250,8 @@ function captureScript(config, epochMs, targets, home) {
   // must not fall back to the process's working directory.
   lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
-  var scan = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-    + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
+  var owned = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+  var scan = owned + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
   // `prune` gates deletion, `measure` only gates du: a symlinked directory is
   // still worth reporting a size for, and refusing to is what made the broken
   // limit invisible. Both answers come from the one probe the settings window
@@ -274,9 +274,8 @@ function captureScript(config, epochMs, targets, home) {
   // check, because bash rejects an empty `if … fi` — and an empty guard is
   // exactly what one limit switching off produces.
   if (cfg.keepHours > 0)
-    lines.push('if [ -n "$prune" ]; then',
-      "  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-        + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null", "fi")
+    lines.push('if [ -n "$prune" ]; then', "  " + owned
+      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null", "fi")
   if (cfg.keep > 0)
     // `own` runs oldest first, so "all but the newest N" is what has to go.
     lines.push('if [ -n "$prune" ]; then',
