@@ -23,14 +23,10 @@ var KEEP_HOURS_MAX = 87600
 var DISK_MB_MAX = 1048576
 var IDLE_MINUTES_MAX = 1440
 
-function integer(value, fallback) {
-  var parsed = Number(value)
-  return isFinite(parsed) && Math.floor(parsed) === parsed ? parsed : fallback
-}
-
 function clamped(value, fallback, min, max) {
-  var parsed = integer(value, fallback)
-  return parsed < min || parsed > max ? fallback : parsed
+  var n = Number(value)
+  var v = isFinite(n) && Math.floor(n) === n ? n : fallback
+  return v < min || v > max ? fallback : v
 }
 
 function monitorList(value) {
