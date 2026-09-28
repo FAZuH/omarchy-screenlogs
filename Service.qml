@@ -23,7 +23,15 @@ Item {
   property string lastShot: ""
   property double lastShotAt: 0
   property int fileCount: -1
+  property int dirMb: -1
+  property double oldestSec: 0
   property double nowMs: 0
+
+  // Non-empty when the save directory is reached through a symlink, which
+  // retention refuses. Holds the physical path to suggest instead.
+  property string dirRealPath: ""
+  // The last save-directory the user typed that retention would refuse.
+  property string rejectedDir: ""
 
   readonly property bool idlePaused: root.config.idleMinutes > 0 && idleMonitor.isIdle
 
@@ -66,7 +74,43 @@ Item {
       s += " · last " + Qt.formatDateTime(new Date(root.lastShotAt), "HH:mm:ss")
     if (root.fileCount >= 0)
       s += " · " + root.fileCount + " file" + (root.fileCount === 1 ? "" : "s")
+    // A configured limit the directory makes unenforceable is worth saying out
+    // loud: retention is not running, and pretending otherwise is what made the
+    // symlinked-directory case so hard to spot.
+    if (root.dirRealPath !== "" && (root.config.keep > 0 || root.config.keepHours > 0
+      || root.config.maxDiskMb > 0))
+      s += " · retention off (symlinked directory)"
     return s
+  }
+
+  // Retention refuses a symlinked save directory. The probe asks the shell the
+  // same question the capture script asks, so the warning cannot drift from
+  // what actually happens at capture time.
+  function checkDir() {
+    dirCheck.pending = ""
+    dirCheck.command = ["bash", "-c",
+      Capture.dirCheckScript(Capture.expandHome(root.config.dir, root.home))]
+    dirCheck.running = true
+  }
+
+  readonly property string dirNotice: Capture.dirNotice(
+    root.rejectedDir !== "" ? root.rejectedDir : root.config.dir,
+    root.dirRealPath, root.home)
+
+  function useRealDir() {
+    if (!root.dirRealPath) return
+    saveConfig({ dir: Capture.collapseHome(root.dirRealPath, root.home) })
+    root.rejectedDir = ""
+  }
+
+  // Saves the save-directory only when retention would accept it. A rejected
+  // path still captures; it just never prunes, so this is a warning, not a lock.
+  function saveDir(value) {
+    var text = String(value === undefined || value === null ? "" : value).trim()
+    dirCheck.pending = text
+    dirCheck.command = ["bash", "-c",
+      Capture.dirCheckScript(Capture.expandHome(text, root.home))]
+    dirCheck.running = true
   }
 
   function saveConfig(patch) {
@@ -80,6 +124,7 @@ Item {
   function applyConfig(raw) {
     root.config = Capture.normalize(parseConfig(raw))
     root.loaded = true
+    checkDir()
   }
 
   function parseConfig(raw) {
@@ -137,6 +182,13 @@ Item {
     if (due) captureNow()
   }
 
+  // A stat the script could not measure arrives empty; 0 is a real value, so
+  // NaN has to be told apart from it.
+  function numberOr(raw, fallback) {
+    var n = parseInt(String(raw), 10)
+    return isNaN(n) ? fallback : n
+  }
+
   function applyCaptureOutput(text) {
     var sawLocked = false
     var lines = String(text || "").split("\n")
@@ -145,8 +197,9 @@ Item {
       if (line === "LOCKED=1") sawLocked = true
       else if (line.indexOf("LAST=") === 0) root.lastShot = line.slice(5)
       else if (line.indexOf("ERR=") === 0) root.lastError = line.slice(4).trim()
-      else if (line.indexOf("COUNT=") === 0)
-        root.fileCount = parseInt(line.slice(6), 10) || 0
+      else if (line.indexOf("COUNT=") === 0) root.fileCount = numberOr(line.slice(6), 0)
+      else if (line.indexOf("SIZE=") === 0) root.dirMb = numberOr(line.slice(5), -1)
+      else if (line.indexOf("OLDEST=") === 0) root.oldestSec = numberOr(line.slice(7), 0)
     }
     root.locked = sawLocked
     if (!sawLocked) root.lastShotAt = Date.now()
@@ -160,6 +213,30 @@ Item {
   Process {
     id: openProc
     command: ["true"]
+  }
+
+  // One probe, two callers: with an empty `pending` it just reports where the
+  // configured directory really is, with a pending value it also gates a save.
+  Process {
+    id: dirCheck
+    property string pending: ""
+
+    command: ["true"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: {
+        var line = String(text || "").trim().split("\n").pop()
+        var real = line.indexOf("SYMLINK\t") === 0 ? line.slice(8).trim() : ""
+        root.dirRealPath = real
+        if (!dirCheck.pending) return
+        if (real) {
+          root.rejectedDir = dirCheck.pending
+          return
+        }
+        root.rejectedDir = ""
+        root.saveConfig({ dir: dirCheck.pending })
+      }
+    }
   }
 
   Process {

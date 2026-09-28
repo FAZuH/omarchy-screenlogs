@@ -41,6 +41,17 @@ PanelWindow {
   readonly property var screens: root.opened && root.service
     ? root.service.screenNames() : []
 
+  // One shape for the small grey lines under a control: what the setting
+  // currently reads, or a note about how it behaves.
+  component Caption: Text {
+    Layout.fillWidth: true
+    textFormat: Text.PlainText
+    color: root.dim
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    wrapMode: Text.WordWrap
+  }
+
   onOpenedChanged: if (opened && root.service) {
     root.dirDraft = root.service.config.dir
     root.fromDraft = root.service.config.activeFrom
@@ -217,14 +228,8 @@ PanelWindow {
             }
           }
 
-          Text {
-            Layout.fillWidth: true
+          Caption {
             text: "Blank or equal bounds mean always active. Start later than the end wraps past midnight."
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
           }
 
           NumberField {
@@ -252,14 +257,9 @@ PanelWindow {
             fontFamily: root.fontFamily
           }
 
-          Text {
-            Layout.fillWidth: true
+          Caption {
             visible: root.screens.length === 0
             text: "No screens detected."
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
           }
 
           Repeater {
@@ -311,14 +311,8 @@ PanelWindow {
             }
           }
 
-          Text {
-            Layout.fillWidth: true
+          Caption {
             text: "Save directory"
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
           }
           TextField {
             id: dirField
@@ -331,8 +325,7 @@ PanelWindow {
             font.pixelSize: Style.font.body
             enabled: root.service !== null
             onAccepted: {
-              if (root.service) root.service.saveConfig({ dir: text })
-              root.dirDraft = text
+              if (root.service) root.service.saveDir(text)
               focus = false
             }
             Keys.onPressed: function(event) {
@@ -341,6 +334,31 @@ PanelWindow {
                 focus = false
                 event.accepted = true
               }
+            }
+          }
+
+          Caption {
+            visible: root.service !== null && root.service.dirNotice !== ""
+            text: root.service ? root.service.dirNotice : ""
+            color: Color.urgent
+          }
+
+          Button {
+            Layout.fillWidth: true
+            visible: root.service !== null && root.service.dirRealPath !== ""
+            iconText: "→"
+            text: root.service
+              ? "Use " + Capture.collapseHome(root.service.dirRealPath, root.service.home)
+              : ""
+            bordered: true
+            focusable: true
+            foreground: root.text
+            accent: Color.accent
+            fontFamily: root.fontFamily
+            onClicked: {
+              if (!root.service) return
+              root.service.useRealDir()
+              root.dirDraft = root.service.config.dir
             }
           }
 
@@ -369,6 +387,10 @@ PanelWindow {
             }
           }
 
+          Caption {
+            text: root.service ? Capture.countUsage(root.service.fileCount) : ""
+          }
+
           NumberField {
             Layout.fillWidth: true
             label: "Keep screenshots newer than (hours)"
@@ -383,6 +405,11 @@ PanelWindow {
             onModified: function(value) {
               if (root.service) root.service.saveConfig({ keepHours: value })
             }
+          }
+
+          Caption {
+            text: root.service
+              ? Capture.ageUsage(root.service.oldestSec, root.service.nowMs) : ""
           }
 
           NumberField {
@@ -401,14 +428,18 @@ PanelWindow {
             }
           }
 
-          Text {
-            Layout.fillWidth: true
+          Caption {
+            // Same over-budget test budgetUsage words it with, so the two
+            // cannot disagree about whether the budget is met.
+            color: root.service && root.service.config.maxDiskMb > 0
+              && root.service.dirMb > root.service.config.maxDiskMb
+              ? Color.urgent : root.dim
+            text: root.service
+              ? Capture.budgetUsage(root.service.dirMb, root.service.config.maxDiskMb) : ""
+          }
+
+          Caption {
             text: "0 turns a limit off."
-            textFormat: Text.PlainText
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            wrapMode: Text.WordWrap
           }
         }
       }

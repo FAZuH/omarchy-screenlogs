@@ -152,6 +152,71 @@ function stamp(epochMs) {
 // images that happen to share the directory.
 var OWNED = "st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*"
 
+function groupDigits(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+}
+
+// Coarse on purpose: a caption, not a stopwatch. Seconds, then minutes, then
+// hours, then whole days.
+function formatAge(seconds) {
+  var s = Math.max(0, Math.floor(Number(seconds) || 0))
+  if (s < 60) return s + "s"
+  var m = Math.floor(s / 60)
+  if (m < 60) return m + "m"
+  var h = Math.floor(m / 60)
+  if (h < 24) return h + "h"
+  return Math.floor(h / 24) + "d"
+}
+
+function countUsage(count) {
+  if (!(count >= 0)) return "unknown"
+  return groupDigits(count) + (count === 1 ? " file" : " files") + " now"
+}
+
+function ageUsage(oldestSec, nowMs) {
+  if (!(oldestSec > 0)) return "no screenshots yet"
+  return "oldest is " + formatAge(nowMs / 1000 - oldestSec) + " old"
+}
+
+function budgetUsage(usedMb, limitMb) {
+  if (!(usedMb >= 0)) return "size unknown"
+  var s = groupDigits(usedMb) + " MB used"
+  if (limitMb > 0) s += usedMb > limitMb
+    ? " · " + groupDigits(usedMb - limitMb) + " MB over budget"
+    : " · " + groupDigits(limitMb - usedMb) + " MB to spare"
+  return s
+}
+
+// Retention deletes, so it only prunes a directory it can prove it is really
+// in: no symlinked path component, and never / or the home directory. A
+// symlinked target is refused rather than followed, so the settings window can
+// point the user at the real path instead of pruning somewhere they did not
+// choose. Stock Omarchy puts ~/Pictures behind a symlink, which is why the
+// settings window checks before it saves.
+function dirCheckScript(dir) {
+  return [
+    "cd -- " + shQuote(dir) + " 2>/dev/null || { echo MISSING; exit 0; }",
+    'case "$(pwd -L)" in /|"$HOME") echo UNSAFE; exit 0 ;; esac',
+    '[ "$(pwd -L)" = "$(pwd -P)" ] && echo SAME || printf "SYMLINK\\t%s\\n" "$(pwd -P)"'
+  ].join("\n")
+}
+
+// The suggestion has to name a path the user could type, so a home inside the
+// path is folded back to `~` rather than spelled out.
+function collapseHome(path, home) {
+  var p = String(path || "")
+  var h = String(home || "")
+  if (!h) return p
+  if (p === h) return "~"
+  return p.indexOf(h + "/") === 0 ? "~" + p.slice(h.length) : p
+}
+
+function dirNotice(logical, physical, home) {
+  if (!physical) return ""
+  return "Retention is off: " + collapseHome(logical, home)
+    + " is reached through a symlink. Use " + collapseHome(physical, home) + " instead."
+}
+
 // Values reach bash only inside single quotes; a failed grim is recorded per
 // monitor instead of aborting the run.
 function captureScript(config, epochMs, targets, home) {
@@ -185,39 +250,66 @@ function captureScript(config, epochMs, targets, home) {
   // must not fall back to the process's working directory.
   lines.push("cd -- " + shQuote(dir) + " 2>/dev/null || { echo \"ERR=directory\"; exit 1; }")
 
-  // Retention deletes, so it only runs in a verified plain directory: no
-  // symlinked path component (logical and physical pwd must agree) and never
-  // / or the home directory. Unrelated images are never matched.
-  if (cfg.keepHours > 0 || cfg.keep > 0 || cfg.maxDiskMb > 0) {
-    lines.push("pwdl=$(pwd -L)")
-    lines.push('case "$pwdl" in /|"$HOME") pwdl= ;; esac')
-    lines.push('[ "$pwdl" = "$(pwd -P)" ] || pwdl=')
-    lines.push("if [ -n \"$pwdl\" ]; then")
-    if (cfg.keepHours > 0)
-      lines.push("  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-        + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
-    if (cfg.keep > 0)
-      lines.push("  ls -1t -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null"
-        + " | tail -n +" + (cfg.keep + 1)
-        + " | tr '\\n' '\\0' | xargs -0 -r rm -f")
-    if (cfg.maxDiskMb > 0) {
-      lines.push("  prev=")
-      lines.push("  while [ \"$(du -sm -- . 2>/dev/null | cut -f1)\" -gt " + cfg.maxDiskMb + " ]; do")
-      lines.push("    oldest=$(ls -1tr -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null | head -n 1)")
-      // The repeat guard ends the loop when the budget can't be met by deleting
-      // screenshots (oversized non-screenshot files in the directory).
-      lines.push("    [ -n \"$oldest\" ] && [ \"$oldest\" != \"$prev\" ] || break")
-      lines.push("    rm -f -- \"$oldest\"")
-      lines.push("    prev=$oldest")
-      lines.push("  done")
-    }
+  // Retention deletes, so it only prunes a directory it can prove it is in: no
+  // symlinked path component (logical and physical pwd must agree) and never /
+  // or the home directory. Settings validation steers the user to a real path
+  // rather than this silently refusing to prune; see dirCheckScript.
+  var scan = "find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+    + " -printf '%T@\\t%b\\t%f\\n' 2>/dev/null | sort -n"
+  // `prune` gates deletion, `measure` only gates du — a symlinked directory is
+  // still worth reporting a size for, and refusing to is what made the broken
+  // limit invisible in the first place.
+  lines.push("prune=$(pwd -L)")
+  lines.push("measure=$(pwd -L)")
+  lines.push('case "$measure" in /|"$HOME") measure= ;; esac')
+  lines.push('[ "$prune" = "$(pwd -P)" ] || prune=')
+  // One scan feeds retention and the settings window's usage readouts. Never a
+  // shell glob: past ~65k files the pattern overflows ARG_MAX and ls reports
+  // nothing, which silently disabled the count and budget limits.
+  lines.push("own=$(" + scan + ")")
+  // bash rejects an empty `if … fi`, so the wrapper only appears when it has
+  // something to run — a budget-only config still needs the count and age
+  // prunes left out entirely.
+  var deletePrunes = []
+  if (cfg.keepHours > 0)
+    deletePrunes.push("  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
+  if (cfg.keep > 0)
+    // `own` runs oldest first, so "all but the newest N" is what has to go.
+    deletePrunes.push("  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
+      + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f")
+  if (deletePrunes.length > 0) {
+    lines.push('if [ -n "$prune" ]; then')
+    for (var d = 0; d < deletePrunes.length; d++) lines.push(deletePrunes[d])
     lines.push("fi")
   }
-
-  // Assumes file names contain no newlines (`ls | tr` pipeline); an embedded
-  // newline would desync COUNT. Upgrade to `find -printf` if that bites.
+  // du measures the whole directory, so non-screenshot files count against the
+  // budget and are never deleted — the loop simply runs out of owned files
+  // first. Blocks are 512-byte units and du rounds each file up to a whole KB,
+  // so subtract it the same way or the loop stops short of the budget.
+  lines.push('if [ -n "$measure" ]; then')
+  lines.push("  total=$(du -sk -- . 2>/dev/null | cut -f1); total=${total:-0}")
+  if (cfg.maxDiskMb > 0) {
+    lines.push("  budget=$(( " + cfg.maxDiskMb + " * 1024 ))")
+    lines.push("  if [ -n \"$prune\" ]; then")
+    lines.push("    while IFS=$'\\t' read -r _mtime blocks name; do")
+    lines.push("      [ \"$total\" -le \"$budget\" ] && break")
+    lines.push("      [ -n \"$name\" ] || break")
+    // The count prune may already have taken this one: rm -f would succeed on a
+    // missing name and shrink `total` for a file that is no longer on disk.
+    lines.push("      [ -e \"$name\" ] || continue")
+    lines.push("      rm -f -- \"$name\" && total=$((total - (blocks + 1) / 2))")
+    lines.push("    done < <(printf '%s\\n' \"$own\")")
+    lines.push("  fi")
+  }
+  // `own` was read before the prunes ran, so the count and age readouts are one
+  // round behind; `size` is exact because the loop tracks what it freed.
+  lines.push("  size=$(( (total + 1023) / 1024 ))")
+  lines.push("fi")
   lines.push("echo \"LAST=$last\"")
   lines.push("echo \"ERR=$err\"")
-  lines.push("echo \"COUNT=$(ls -1 -- " + OWNED + ".png " + OWNED + ".jpg 2>/dev/null | wc -l | tr -d ' ')\"")
+  lines.push("echo \"COUNT=$(printf '%s\\n' \"$own\" | grep -c .)\"")
+  lines.push("echo \"OLDEST=$(printf '%s\\n' \"$own\" | head -1 | cut -f1 | cut -d. -f1)\"")
+  lines.push("echo \"SIZE=$size\"")
   return lines.join("\n")
 }

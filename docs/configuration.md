@@ -61,9 +61,41 @@ All three default sensibly: count 500, age and budget off.
 
 Retention only ever deletes files named by the plugin itself
 (`st-<date>-<time>…`, see Files). Other images in the directory are never
-touched. It is skipped for a round when the directory path contains a
-symlinked component, or when the directory is `/` or the home directory —
-capture still runs there, deletion does not.
+touched. It is skipped for a round when the directory is `/` or the home
+directory, or when the path reaches it through a symlink.
+
+A symlinked save directory is a real trap here: a stock Omarchy install puts
+`~/Pictures` behind a symlink, so `~/Pictures/screenlogs` looks like a plain
+folder but is not one, and retention quietly does nothing. The settings window
+checks the path before saving it, names the real path when the check fails, and
+offers a button that switches to it. The panel status also says
+`retention off (symlinked directory)` whenever a limit is configured but the
+directory is one retention will not touch — the limit is not enforced, and
+pretending otherwise is what made this hard to spot.
+
+Only deletion is gated on this. The size and file-count readouts are measured
+either way, so a symlinked directory still tells you how full it is.
+
+The budget is enforced in a single pass: the directory is measured once, then
+the owned files are walked oldest first, subtracting each deletion from the
+running total until the budget is met. That is one directory scan per round
+whatever the limits are. The size readout is exact from the round that pruned;
+the file count and age come from the scan taken before the prunes ran, so they
+settle on the next round.
+
+## Readouts
+
+The settings window shows what each limit is currently acting on, refreshed
+every capture round:
+
+| Field | Readout |
+|---|---|
+| `keep` | how many screenshot files exist now |
+| `keepHours` | how old the oldest screenshot is |
+| `maxDiskMb` | how much the directory uses, and how far over or under budget it is |
+
+The size readout is blank where deletion is refused, and the count keeps
+ticking while capture is paused even though nothing prunes.
 
 ## Files
 
