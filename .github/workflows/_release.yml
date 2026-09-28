@@ -133,6 +133,24 @@ jobs:
           git config user.name "faz-bot"
           git config user.email "mail@fazuh.com"
           TAG="${{ steps.commit.outputs.tag }}"
+          # Stamp the tag into manifest.json so the plugin marketplace, which
+          # reads the manifest rather than the tag, stops advertising the
+          # previous release. The amend below carries it into the tagged commit,
+          # so the version and the tag can never disagree. Only this project has
+          # a manifest; the if keeps the step honest if the file is ever absent.
+          if [ -f manifest.json ]; then
+            node -e '
+              const fs = require("fs")
+              const p = "manifest.json"
+              const m = JSON.parse(fs.readFileSync(p, "utf8"))
+              const v = process.argv[1].replace(/^v/, "")
+              if (m.version !== v) {
+                m.version = v
+                fs.writeFileSync(p, JSON.stringify(m, null, 2) + "\n")
+              }
+            ' "$TAG"
+            git add manifest.json
+          fi
           git rm --cached -rf --ignore-unmatch version.json
           git commit --amend --no-edit
           if [ -n "$TAG" ]; then
