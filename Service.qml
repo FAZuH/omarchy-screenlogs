@@ -114,10 +114,7 @@ Item {
   }
 
   function saveConfig(patch) {
-    var next = ({})
-    for (var key in root.config) next[key] = root.config[key]
-    for (var p in patch) next[p] = patch[p]
-    applyConfig(JSON.stringify(Capture.normalize(next)))
+    applyConfig(JSON.stringify(Capture.normalize(Object.assign({}, root.config, patch))))
     configFile.setText(JSON.stringify(root.config, null, 2) + "\n")
   }
 
