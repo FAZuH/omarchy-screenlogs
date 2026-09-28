@@ -56,7 +56,7 @@
         "key": "dir",
         "type": "string",
         "label": "Save directory",
-        "description": "~ expands to the home directory.",
+        "description": "~ expands to the home directory. Must not reach the folder through a symlink or retention will not prune it.",
         "defaultValue": "~/Pictures/screenlogs"
       },
       {
@@ -116,7 +116,7 @@
         "key": "keep",
         "type": "integer",
         "label": "Recent screenshots to keep",
-        "description": "Newest N files kept in the directory; 0 keeps everything.",
+        "description": "Newest N files kept in the directory; 0 keeps everything. The settings window shows the current file count.",
         "min": 0,
         "max": 100000,
         "defaultValue": 500
@@ -125,7 +125,7 @@
         "key": "keepHours",
         "type": "integer",
         "label": "Keep screenshots newer than (hours)",
-        "description": "0 turns the age limit off.",
+        "description": "0 turns the age limit off. The settings window shows the age of the oldest screenshot.",
         "min": 0,
         "max": 87600,
         "defaultValue": 0
@@ -134,7 +134,7 @@
         "key": "maxDiskMb",
         "type": "integer",
         "label": "Directory budget (MB)",
-        "description": "Oldest files are deleted until the directory fits; 0 is unlimited.",
+        "description": "Oldest files are deleted until the directory fits; 0 is unlimited. The settings window shows the current size.",
         "min": 0,
         "max": 1048576,
         "defaultValue": 0
