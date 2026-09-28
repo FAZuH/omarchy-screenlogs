@@ -345,6 +345,21 @@ check("no home leaves the path alone", C.collapseHome("/mnt/c", ""), "/mnt/c")
 check("digits are grouped", C.groupDigits(14839), "14,839")
 check("grouping leaves short numbers alone", C.groupDigits(999), "999")
 check("grouping handles exactly three digits", C.groupDigits(1000), "1,000")
+// The grouping is pinned, so a session running under a locale that groups with
+// a dot must still read the same. This is what a future bare toLocaleString()
+// would break, silently and only for non-English sessions. Node resolves the
+// locale from LC_ALL even where the system has not generated it, so the child
+// really does run under de-DE.
+check("grouping does not follow the session locale",
+  execFileSync(process.execPath,
+    ["-e",
+      'const C = new Function(require("fs").readFileSync(process.argv[1], "utf8")'
+      + '.replace(/^\\.pragma library\\s*/, "") + "\\nreturn { groupDigits }")();'
+      + "console.log(C.groupDigits(14839))",
+      new URL("./Capture.js", import.meta.url).pathname],
+    { env: { ...process.env, LANG: "de_DE.UTF-8", LC_ALL: "de_DE.UTF-8" } })
+    .toString().trim(),
+  "14,839")
 check("age reads in seconds", C.formatAge(45), "45s")
 check("age reads in minutes", C.formatAge(600), "10m")
 check("age reads in hours", C.formatAge(7200), "2h")

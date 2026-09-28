@@ -149,8 +149,10 @@ function stamp(epochMs) {
 // images that happen to share the directory.
 var OWNED = "st-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]*"
 
+// The locale is pinned rather than left to the session: a de_DE user would
+// otherwise read `5.000` in the readouts the tests pin to `5,000`.
 function groupDigits(n) {
-  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+  return n.toLocaleString("en-US")
 }
 
 // Coarse on purpose: a caption, not a stopwatch. Seconds, then minutes, then
