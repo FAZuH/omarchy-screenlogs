@@ -1,3 +1,10 @@
+## [0.1.4](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.3...v0.1.4) (2026-09-28)
+
+
+### Bug Fixes
+
+* enforce retention limits and validate the save directory ([a78b78b](https://github.com/FAZuH/omarchy-screenlogs/commit/a78b78b0343e3686db34663ead219cdef0b6be82))
+
 ## [0.1.3](https://github.com/FAZuH/omarchy-screenlogs/compare/v0.1.2...v0.1.3) (2026-09-16)
 
 
