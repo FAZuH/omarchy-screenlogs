@@ -269,22 +269,19 @@ function captureScript(config, epochMs, targets, home) {
   // shell glob: past ~65k files the pattern overflows ARG_MAX and ls reports
   // nothing, which silently disabled the count and budget limits.
   lines.push("own=$(" + scan + ")")
-  // bash rejects an empty `if … fi`, so the wrapper only appears when it has
-  // something to run — a budget-only config still needs the count and age
-  // prunes left out entirely.
-  var deletePrunes = []
+  // Each prune carries its own guard, the same shape the budget loop below
+  // already uses. Collecting them first to share one guard needs a count
+  // check, because bash rejects an empty `if … fi` — and an empty guard is
+  // exactly what one limit switching off produces.
   if (cfg.keepHours > 0)
-    deletePrunes.push("  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
-      + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null")
+    lines.push('if [ -n "$prune" ]; then',
+      "  find . -maxdepth 1 -type f \\( -name '" + OWNED + ".png' -o -name '" + OWNED + ".jpg' \\)"
+        + " -mmin +" + (cfg.keepHours * 60) + " -delete 2>/dev/null", "fi")
   if (cfg.keep > 0)
     // `own` runs oldest first, so "all but the newest N" is what has to go.
-    deletePrunes.push("  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
-      + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f")
-  if (deletePrunes.length > 0) {
-    lines.push('if [ -n "$prune" ]; then')
-    for (var d = 0; d < deletePrunes.length; d++) lines.push(deletePrunes[d])
-    lines.push("fi")
-  }
+    lines.push('if [ -n "$prune" ]; then',
+      "  printf '%s\\n' \"$own\" | head -n -" + cfg.keep
+        + " | cut -f3- | tr '\\n' '\\0' | xargs -0 -r rm -f", "fi")
   // du measures the whole directory, so non-screenshot files count against the
   // budget and are never deleted — the loop simply runs out of owned files
   // first. Blocks are 512-byte units and du rounds each file up to a whole KB,

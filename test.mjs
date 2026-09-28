@@ -185,6 +185,11 @@ check("the budget loop is gated on deletion being safe",
 check("the size readout is not gated on deletion being safe",
   pruned.includes("du -sk -- .")
     && pruned.indexOf("du -sk -- .") > pruned.indexOf('case "$check" in'), true)
+// Each prune is guarded on its own, so a limit switching off cannot leave an
+// empty `if … fi` (a bash syntax error, and the reason this was an array).
+check("every delete prune carries its own deletion guard",
+  (pruned.match(/-mmin \+1440|head -n -500/g) || []).length,
+  (pruned.match(/if \[ -n "\$prune" \]; then\n(?:.*\n)*?  fi/g) || []).length)
 check("prunes run inside the deletion guard",
   pruned.indexOf("head -n -500") > pruned.indexOf('if [ -n "$prune" ]; then')
     && pruned.indexOf("head -n -500") < pruned.indexOf("budget=$(( 2048 * 1024 ))"), true)
